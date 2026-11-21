@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`f9ed8da`（AI 教练 Release 1 + Release 2 + Release 3 readiness/自适应复盘/训练中 co-pilot + Mac P1 修复；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒和 active_workout 上下文但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **718 passed**、QA **76/76**、Ruff 通过；**N29/N30/N31/N32 已修，N33 仍 P2**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`b351c9a`（AI 教练 Release 1 + Release 2 + Release 3 readiness/自适应复盘/训练中 co-pilot/按动作进阶 + Mac P1 修复；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒和 active_workout 上下文但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **723 passed**、QA **76/76**、Ruff 通过；**N29/N30/N31/N32 已修，N33 仍 P2**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -69,6 +69,39 @@
   - 不要把习惯提醒标识改成 `workout-*`；不要用关闭训练提醒去删 `habit-*`。
   - 不要声称习惯提醒跨设备同步。
 - 仍 BLOCKED：iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
+
+### 2026-11-21 · Windows（Release 3：按动作的下周进阶）
+
+- 提交：`b351c9a`，已推 `develop`；生产 API 已重建，`/health/ready` 200。
+- 新增 `backend/app/services/coach_control/progression.py`：
+  - 读取每个“下周负重动作”最近一次训练：重量、次数、RPE。
+  - 对照计划次数区间：
+    - 次数到区间上沿且平均 RPE ≤8 → 加 2.5%
+    - 平均 RPE ≥9 或次数低于区间下沿 → 降 5%
+    - 其他 → 保持
+  - 重量按器械取整：杠铃/器械/绳索按 2.5kg，哑铃按 1kg。
+  - 目前只处理有重量的力量动作；自重、拉伸、有氧不进入进阶建议。
+- 读问答：
+  - “下周卧推加多少 / 要不要加重量 / 怎么进阶”走 `coach.answer`，注入每个动作的建议和理由。
+- 写操作：
+  - 明说“帮我按建议改下周”才生成确认卡。
+  - 单天改动走 `training.edit_day_exercise` proposal；多天走 `coach.batch`，最多 5 天，超出的天数先保持。
+  - 复用现有计划编辑执行和 undo。
+- 复盘：
+  - `review.weekly` payload 增加 `progression`，actions 里带一条下周按动作调整预览。
+- 生产冒烟（`test_reviewer`，无训练记录）：
+  - “下周卧推加多少” → `coach.answer`，建议先保持，不加重量。
+  - “帮我按建议改下周” → `training.apply_progression`，无记录时返回“先保持”，不生成卡。
+  - “这周复盘” → `review.weekly`，progression targets 只保留负重动作，不再被拉伸/有氧刷屏。
+- 验证：后端 **723 passed**、QA **76/76**、Ruff 通过；新增 5 个测试覆盖加重、降重、只读事实、确认执行和撤销。
+- iOS：本切片无代码改动；现有 proposal/batch 卡直接可用。
+- 未验证：
+  - 高训练量账号的真实 +2.5%/-5% 建议没有用生产账号跑完整确认链路，只有单元测试。
+  - 自重动作的进阶（加次数/加组）还没做。
+- 下一步：
+  - Release 3 剩余：定时主动推送调度、训练页内嵌 co-pilot 浮层、自重动作进阶。
+  - Mac build + 真机验证现有提醒/建档/co-pilot/进阶卡。
+- 仍 BLOCKED：N33 话术、iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
 
 ### 2026-11-21 · Windows（Release 3：训练中 co-pilot）
 
