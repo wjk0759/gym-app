@@ -30,6 +30,8 @@ from ...models import (
 )
 from ..lexicon import EQUIPMENT_LABELS
 from ..queries import active_goal
+from .progression import build_plan as build_progression_plan
+from .progression import format_facts as format_progression_facts
 from .readiness import snapshot as readiness_snapshot
 
 
@@ -387,6 +389,16 @@ def _recovery_summary(db: Session, user_id: str) -> str:
     return "\n".join(lines)
 
 
+def _progression_summary(
+    db: Session,
+    user_id: str,
+    program: Program | None,
+) -> str:
+    """Per-exercise next-week targets, grounded in last-session RPE/reps."""
+    plan = build_progression_plan(db, user_id, program)
+    return format_progression_facts(plan)
+
+
 def build_readonly_context(
     db: Session,
     user_id: str,
@@ -445,6 +457,25 @@ def build_readonly_context(
         )
     ):
         sections.append(_recovery_summary(db, user_id))
+    if any(
+        word in text
+        for word in (
+            "加多少",
+            "加重",
+            "加重量",
+            "进阶",
+            "目标重量",
+            "要不要加",
+            "怎么加",
+        )
+    ) or (
+        "下周" in text
+        and any(
+            word in text
+            for word in ("卧推", "深蹲", "硬拉", "推举", "划船")
+        )
+    ):
+        sections.append(_progression_summary(db, user_id, program))
     if any(word in text for word in ("计划", "安排", "为什么", "分化", "频率", "训练日")):
         sections.append(_plan_summary(program))
 

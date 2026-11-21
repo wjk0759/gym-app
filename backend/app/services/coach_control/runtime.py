@@ -88,6 +88,7 @@ GOAL = "profile.update_goal"
 UPDATE_PROFILE = "profile.update"
 ONBOARD = "profile.onboard"
 LIFE_EVENT = "training.life_event"
+PROGRESSION = "training.apply_progression"
 UPDATE_INJURIES = "profile.update_injuries"
 UPDATE_EQUIPMENT = "profile.update_equipment"
 EQUIPMENT_ADD = "equipment.add"
@@ -841,6 +842,31 @@ def _looks_like_life_event(message: str) -> bool:
 
     return bool(
         EVENT_WORDS.search(message) and TRAINING_WORDS.search(message)
+    )
+
+
+def _looks_like_progression_apply(message: str) -> bool:
+    """Explicit request to write the next-week per-exercise targets."""
+    return bool(
+        re.search(
+            r"按.{0,6}(?:建议|这个|进阶).{0,6}(?:改|调|练)|"
+            r"(?:帮我|给我).{0,8}(?:改|调).{0,8}(?:下周|进阶)|"
+            r"(?:应用|写入).{0,6}进阶|"
+            r"下周.{0,8}(?:按这个|就按这个|按建议)",
+            message,
+        )
+    )
+
+
+def _looks_like_progression_question(message: str) -> bool:
+    return bool(
+        re.search(
+            r"下周.{0,12}(?:加多少|加重|加重量|进阶|怎么加|目标重量)|"
+            r"(?:卧推|深蹲|硬拉|推举|划船).{0,8}(?:加多少|加重|进阶)|"
+            r"要不要(?:加重量|加重)|"
+            r"下周.{0,6}怎么(?:加|练重)",
+            message,
+        )
     )
 
 
@@ -3760,6 +3786,8 @@ async def handle_turn(
         intent_override = ONBOARD
     if intent_override is None and _looks_like_life_event(text):
         intent_override = LIFE_EVENT
+    if intent_override is None and _looks_like_progression_apply(text):
+        intent_override = PROGRESSION
 
     if intent_override is None and _looks_like_plan_configure(text):
         from .capabilities.plan_configure import resolve as resolve_configure
@@ -4556,7 +4584,57 @@ async def handle_turn(
             "pending": serialize_pending(active),
         }
 
-    if intent_override == LIFE_EVENT:
+    if intent_override == PROGRESSION:
+        from ..queries import active_program
+        from .progression import resolve_apply
+
+        resolution = resolve_apply(
+            db,
+            user_id,
+            active_program(db, user_id),
+        )
+        if not resolution.get("ready"):
+            return _finish_reply(
+                db,
+                session,
+                turn,
+                started,
+                intent=PROGRESSION,
+                reply=str(
+                    resolution.get("question")
+                    or "暂时没有可用的下周进阶建议。"
+                ),
+            )
+        payload = resolution["payload"]
+        actions = payload.get("batch") or []
+        reply = str(
+            resolution.get("reply")
+            or payload.get("reply")
+            or "下周进阶建议已经排好，确认后写入。"
+        )
+        if len(actions) == 1:
+            action = actions[0]
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=str(action.get("capability_id") or ""),
+                payload=dict(action.get("payload") or {}),
+                reply=reply,
+                kind="proposal",
+            )
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=BATCH,
+            payload=payload,
+            reply=reply,
+        )
+
+    elif intent_override == LIFE_EVENT:
         from .life_events import resolve as resolve_life_event
 
         resolution = resolve_life_event(db, user_id, text, context)

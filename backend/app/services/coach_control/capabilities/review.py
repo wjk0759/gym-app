@@ -32,6 +32,7 @@ def resolve(db: Session, user_id: str) -> dict:
             "actions": review.get("actions") or [],
             "stats": review.get("stats") or {},
             "readiness": review.get("readiness") or {},
+            "progression": review.get("progression") or {},
             "generated_at": review.get("generated_at"),
             "week_start": review.get("week_start"),
         },

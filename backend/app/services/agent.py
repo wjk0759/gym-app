@@ -3838,9 +3838,11 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
     context = build_coach_context(db, user_id)
     nutrition = context.get("nutrition_7d") or {}
     program = active_program(db, user_id)
+    from .coach_control.progression import build_plan as build_progression_plan
     from .coach_control.readiness import snapshot as readiness_snapshot
 
     readiness = readiness_snapshot(db, user_id, now=now)
+    progression = build_progression_plan(db, user_id, program)
     adherence = _plan_week_adherence(
         db,
         program,
@@ -3960,6 +3962,21 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
         if not any("加 2.5%" in item for item in actions):
             actions.append("恢复窗口充足，下一次主项稳定时可加 2.5% 或 +1 次")
 
+    if progression.get("ready"):
+        changed = [
+            item
+            for item in progression.get("targets") or []
+            if item.get("action") in {"up", "down"}
+            and item.get("target_weight_kg") is not None
+        ]
+        if changed:
+            preview = "、".join(
+                f"{item['name']} {float(item['current_weight_kg']):g}"
+                f"→{float(item['target_weight_kg']):g}kg"
+                for item in changed[:2]
+            )
+            actions.append(f"下周按动作调整：{preview}；可在教练里确认后写入")
+
     if previous["volume_kg"] > 0 and current["volume_kg"] > previous["volume_kg"] * 1.1:
         wins.append("训练容量较上周提升")
     elif previous["volume_kg"] > 0 and current["volume_kg"] < previous["volume_kg"] * 0.8:
@@ -4009,6 +4026,7 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
             "acute_load": readiness["acute_load"],
             "chronic_weekly_load": readiness["chronic_weekly_load"],
             "acwr": readiness["acwr"],
+            "progression_ready": bool(progression.get("ready")),
             "average_duration_min": current["average_duration_min"],
             "previous_volume_kg": previous["volume_kg"],
             "nutrition_logged_days": logged_days,
@@ -4024,6 +4042,7 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
         "watchouts": watchouts[:3],
         "actions": actions[:3],
         "readiness": readiness,
+        "progression": progression,
         "generated_at": now.isoformat(),
     }
 
