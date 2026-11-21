@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`4607b96`（AI 教练 Release 1：只读问答 + 日历/反编造伤病 + 完整 `/coach/turns` 路由与记忆修复 + 对话式建档；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码仍 `7d03219`，Mac 已跑 `FitAITests` **144/144**、UI **7/7**，iOS `7d03219` 已装 Wu-Tang；`/health/ready` **200**；Flyway **V44**；后端 **697 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`4607b96`（AI 教练 Release 1：只读问答 + 日历/反编造伤病 + 完整 `/coach/turns` 路由与记忆修复 + 对话式建档；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码仍 `7d03219`，Mac 已跑 `FitAITests` **144/144**、UI **7/7**，iOS `7d03219` 已装 Wu-Tang；`/health/ready` **200**；Flyway **V44**；后端 **697 passed**、QA **76/76**、Ruff 通过；**Mac 正在对 4607b96 复测 N29–N33 + 建档**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -106,6 +106,28 @@
   - 不要把 `assistant_reply` 发给记忆提取器；模型自己的话不能变成用户长期记忆。
   - 不要在上下文里省掉今天的日期/星期。
 - 仍 BLOCKED：真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
+### 2026-11-21 · macOS（AI 教练 Release 1 只读压测：N29–N32，基于 1595c36）
+
+- 环境：生产后端 `1595c36`；iOS `7d03219`；账号 `macqa_coach`；真实 3 练计划；本周/上周无训练记录；7 条 body_metrics。
+- **N29 P1：上周吃了什么被路由成饮食写入草稿**
+  - “我上周吃了什么” → `intent=diet.log_food`、`draft:diet.log_food`，回复“请补充食物名称和份量”；重复两次一致。
+  - “最近饮食怎么样”带 context 时能正确走 7 天回顾；router 把“吃了什么”抢成写能力。
+- **N30 P1：改课“加一组”退化成普通问答**
+  - “把周五全身 C 的持瓶自重深蹲加一组” → `coach.answer`、无 pending；回复称“已经换成前弓步”。
+  - 同一动作“改成 3 组”“删掉”都能出 `training.edit_day_exercise` 卡；旧 `/agent/chat` 也能出卡。
+  - 泛称“深蹲”也找不到动作：“把周五全身 C 的深蹲改成 3 组” → “没有在计划里找到这个动作”；完整名“持瓶自重深蹲”才正常。
+- **N31 P1：新控制面绕过记忆过滤**
+  - `/agent/memories` 返回 0，`/coach/memories` 返回 44 条 active。
+  - 其中含旧 `weekly_schedule`（C 移至周日）、`squat_substitution`（深蹲全换前弓步）、`injury chest_pain/chest_discomfort`、pending schedule 记忆。
+  - `/coach/turns` 会引用：“深蹲我按你说的换成前弓步”“你之前提过胸口不适”；无 context 时“C 挪到周日，一、三、日”。
+  - 计划实际是周一/周三/周五、持瓶自重深蹲；档案 injuries 为空。
+  - 根因：`build_memory_book` 直接查 `AIMemory`，没有 `is_pending_action_fact()` 过滤；`/coach/memories` 也未标记/隐藏 pending/goal 旧记忆。
+- **N32 P2：无 app_context 时只读问题触发计划生成**
+  - “为什么这样安排计划”无 context → `training.generate_plan` proposal；带 context → `coach.answer`。
+  - “第一周练什么”无 context → “没有安排训练”；带 context → “3 练，已完成 0 次”；“第一周每天练什么”仍不列每天。
+- 已通过：上周/本周训练次数 0、最近饮食（带 context）、档案完整、计划频率（带 context）、体重趋势、上次训练 0；改期卡正常。
+- 本轮未部署：iOS 仍 `7d03219`；后端仍 `1595c36`。N29/N30/N31 先修，N32 一起收口。
+- 禁止恢复：不要绕过 `is_pending_action_fact`；不要把“加一组/泛称深蹲”降成普通问答；不要用无 context 的读问题生成计划。
 
 ### 2026-11-21 · Windows（只读冒烟修复：日历窗口 + 反编造伤病）
 

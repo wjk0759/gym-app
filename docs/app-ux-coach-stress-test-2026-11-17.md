@@ -1551,3 +1551,99 @@ summary “目标体重 65kg…” → 68kg
 - iOS：`FitAITests` **140/140**、`FitAIUITests` **6/6**；phone-only Release build 成功，已安装并启动 Wu-Tang `com.wjk.fitai`。
 - 生产后端已是 `e00708a`；iOS 新包已安装。
 - 本轮 N23–N28 全部通过，无新增阻断。历史 P2 文案类（N3/N6/C7–C11 等）未逐条重测。
+
+## 三十六、2026-11-21 AI 教练 Release 1 只读问答压测（1595c36）：N29–N32
+
+- 环境：生产后端 `1595c36`；iOS `7d03219`；账号 `macqa_coach`；真实计划 4 周 3 练（start 2026-11-18）；本周/上周无训练记录；饮食记录 0；body_metrics 7 条。
+- 方式：真实 `/coach/turns`，带真实 `app_context` 和不带 `app_context` 两种路径；只生成 pending，不确认执行。
+- 结论：新增只读 insights 本身能给出部分正确事实，但真实链路出现 **2 个 P1 + 2 个 P2**，本轮不部署。
+
+### N29 P1：上周吃了什么被路由成饮食写入草稿
+
+```text
+我上周吃了什么
+→ intent=diet.log_food
+→ pending=draft:diet.log_food
+→ “你没有提到这一餐具体吃了什么…请补充食物名称和大致份量”
+```
+
+用户问的是历史饮食回顾，实际生成了“记录饮食”草稿；重复两次一致。若用户按提示补充食物，会把一餐写进今天，而不是回答上周记录。
+
+对照：“最近饮食怎么样”在带 `app_context` 时正确返回“最近 7 天 0 条”；说明 insights 能工作，但 router 把“吃了什么”抢到了写能力。
+
+### N30 P1：改课“加一组”被当成普通问答
+
+```text
+把周五全身 C 的持瓶自重深蹲加一组
+→ intent=coach.answer
+→ pending=None
+→ “深蹲你已经换成前弓步了…前弓步多做一组”
+```
+
+实际计划仍是 `vital-bodyweight-squat-with-bottles-hand`（持瓶自重深蹲），没有前弓步；回复既没有改课卡，又引用了错误记忆。
+
+对照：
+
+```text
+把周五全身 C 的持瓶自重深蹲改成 3 组 → training.edit_day_exercise 正常出卡
+把周五全身 C 的持瓶自重深蹲删掉       → training.edit_day_exercise 正常出卡
+旧 /agent/chat 同样“加一组”也能出 modify_workout 卡
+```
+
+自然语言“加一组”在 `/coach/turns` 路径退化。另有同类的“深蹲”泛称问题：
+
+```text
+把周五全身 C 的深蹲改成 3 组   → “没有在计划里找到这个动作”
+把周五全身 C 的深蹲换成前弓步 → “没有在计划里找到这个动作”
+持瓶自重深蹲（完整名）           → 正常出卡
+```
+
+### N31 P1：新教练控制面绕过了记忆过滤
+
+- `/agent/memories` 返回 **0 条**，但 `/coach/memories` 返回 **44 条** active 记忆。
+- 其中包含旧测试/未确认动作留下的：
+  - `weekly_schedule`：C 训练日移至周日
+  - `squat_substitution`：整个计划深蹲全部换成前弓步
+  - `schedule_adjustment` / `full_body_c_day` / `friday_full_body_c_squat`
+  - `injury chest_pain` / `injury chest_discomfort`
+- `/coach/turns` 会读到这些记忆并重复：
+  - “深蹲我按你说的换成前弓步”
+  - “你之前提过胸口不适”
+  - 无 `app_context` 时“你已经把 C 挪到周日，那就一、三、日”
+
+计划实际是周一/周三/周五、持瓶自重深蹲；档案 injuries 为空。`build_memory_book` 直接查询 `AIMemory`，没有 `is_pending_action_fact()` 过滤；`/coach/memories` 也没有标记 pending/goal 旧记忆。N21 的“未确认计划不写/不读记忆”在新控制面失效。
+
+### N32 P2：无 app_context 时只读问题会触发计划生成/错误周
+
+```text
+为什么这样安排计划（无 app_context）
+→ intent=training.generate_plan
+→ pending=proposal training.generate_plan
+→ “计划排好了…确认后激活”
+```
+
+同一句带 `app_context` 会正常走 `coach.answer`。但 API 的另一条路径把“为什么”变成重新生成计划的提案，用户点确认会替换当前计划。
+
+同类：
+
+```text
+第一周练什么（无 context）→ “本周没有安排训练”
+第一周练什么（有 context）→ “本周计划 3 练，已完成 0 次”
+第一周每天练什么（有 context）→ 只说 3 练，不列每天
+```
+
+### 已验证正常
+
+- “我上周练了几次” → 0 次，正确（带/不带 context）。
+- “我这周练了几次” → 0 次，正确。
+- “最近饮食怎么样” → 有 context 时最近 7 天 0 条正确。
+- “我的档案完整吗” → 完整，正确。
+- “我的计划是每周几练” → 有 context 时 3 练、模板一三五，正确。
+- “最近体重变化” → `body.review_trend` 正常。
+- “我上次练了什么” → 28 天无记录，正确。
+- 改期“把周五 C 改到周日” → 正常 pending 改期卡；混合“读次数+改期”只保留改期，读问题未回答。
+
+### 部署状态
+
+- 本轮只压测，未改代码、未部署；iOS 仍 `7d03219`，后端仍 `1595c36`。
+- N29/N30/N31 建议作为下一轮 P1；N32 为 P2，需明确 `app_context` 缺失时的只读降级。
