@@ -50,6 +50,7 @@ struct WorkoutSessionView: View {
     @State var weightStep = 2.5
     @State var valueEditor: WorkoutValueEditor?
     @State var mediaStore = ExerciseMediaStore()
+    @State var showWorkoutCoach = false
     @State var showInstructions = false
     @State var substitutionTarget: Exercise?
     @State var substitutionNotice: String?
@@ -262,6 +263,15 @@ struct WorkoutSessionView: View {
                         Button("暂停") { showExitConfirm = true }
                     }
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showWorkoutCoach = true
+                    } label: {
+                        Image(systemName: "bubble.left.and.bubble.right.fill")
+                    }
+                    .accessibilityLabel("训练中教练")
+                    .disabled(store.isWorkoutCoachWorking)
+                }
             }
             .keyboardDoneToolbar()
             .onAppear {
@@ -393,6 +403,9 @@ struct WorkoutSessionView: View {
                     reps: $reps
                 )
             }
+            .sheet(isPresented: $showWorkoutCoach) {
+                WorkoutCoachSheet(activeWorkout: workoutCoachContext)
+            }
         }
     }
 
@@ -401,6 +414,33 @@ struct WorkoutSessionView: View {
     var currentExercise: PlanExercise? {
         guard activeDay.exercises.indices.contains(index) else { return nil }
         return effectiveExercise(activeDay.exercises[index])
+    }
+
+    /// 训练刚开始还没有保存草稿时，也把当前动作发给内嵌教练。
+    var workoutCoachContext: [String: Any]? {
+        guard let exercise = currentExercise else { return nil }
+        let completed = logs.filter {
+            $0.slug == exercise.slug && $0.completed
+        }
+        var value: [String: Any] = [
+            "day_id": day.id.uuidString,
+            "title": activeDay.title,
+            "current_index": index,
+            "current_name": exercise.exercise?.nameZH ?? exercise.slug,
+            "current_slug": exercise.slug,
+            "planned_sets": exercise.sets,
+            "completed_sets": completed.count,
+            "elapsed_seconds": Int(currentElapsed),
+            "feeling": feeling,
+        ]
+        if let last = completed.last {
+            value["last_set"] = [
+                "weight_kg": last.weightKG,
+                "reps": last.reps,
+                "rpe": last.rpe,
+            ]
+        }
+        return value
     }
 
     /// One batch request covers the whole day; switching exercises then reads

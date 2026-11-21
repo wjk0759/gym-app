@@ -126,6 +126,45 @@ extension AppStore {
         }
     }
 
+    /// 训练页内嵌 co-pilot：只保留一条临时回复，不写主聊天。
+    /// 需要确认的写操作仍会落到 coachPending，提示用户回教练页确认。
+    func askWorkoutCoach(
+        _ text: String,
+        activeWorkout: [String: Any]? = nil
+    ) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !isWorkoutCoachWorking else { return }
+        isWorkoutCoachWorking = true
+        workoutCoachReply = nil
+        var appContext = agentAppContext()
+        if let activeWorkout {
+            appContext["active_workout"] = activeWorkout
+        }
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { self.isWorkoutCoachWorking = false }
+            do {
+                let response = try await APIClient.shared.coachTurn(
+                    message: trimmed,
+                    sessionID: self.coachSessionID,
+                    appContext: appContext
+                )
+                self.coachSessionID = response.session.id
+                self.coachSession = response.session
+                self.coachPending = response.pending
+                if response.pending != nil {
+                    self.workoutCoachReply = response.reply
+                        + "\n\n这个操作需要回教练页确认。"
+                } else {
+                    self.workoutCoachReply = response.reply
+                }
+                self.persist()
+            } catch {
+                self.workoutCoachReply = "教练暂时没回，先按上一组的感觉练。"
+            }
+        }
+    }
+
     func confirmCoachPending() {
         guard let pending = coachPending,
               !isCoachControlWorking,

@@ -73,6 +73,9 @@ final class AppStore {
     var sessions: [WorkoutSession] = []
     /// 当前训练中的本地草稿；只保留一个，避免同一天出现多份进度。
     var workoutDraft: WorkoutDraft?
+    /// 训练页内嵌 co-pilot 的临时回复，不进入主聊天持久化。
+    var workoutCoachReply: String?
+    var isWorkoutCoachWorking = false
     var chat: [ChatMessage] = []
     var selectedTab = 0
     /// Transient handoff from Today to the Record tab. Not persisted.
@@ -274,6 +277,8 @@ final class AppStore {
         planHistory = []
         sessions = []
         workoutDraft = nil
+        workoutCoachReply = nil
+        isWorkoutCoachWorking = false
         chat = []
         foodLogs = []
         dailyNutritionTargets = nil
