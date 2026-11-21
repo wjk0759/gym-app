@@ -26,6 +26,7 @@ BATCHABLE = frozenset(
         "training.dislike_exercise",
         "diet.dislike_food",
         "profile.update_equipment",
+        "profile.update",
         "body.log_weight",
         "profile.update_goal",
         "training.edit_day_exercise",

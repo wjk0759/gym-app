@@ -86,6 +86,7 @@ APPLY_ANALYSIS = "body.apply_analysis"
 REVIEW = "review.weekly"
 GOAL = "profile.update_goal"
 UPDATE_PROFILE = "profile.update"
+ONBOARD = "profile.onboard"
 UPDATE_INJURIES = "profile.update_injuries"
 UPDATE_EQUIPMENT = "profile.update_equipment"
 EQUIPMENT_ADD = "equipment.add"
@@ -790,6 +791,21 @@ def _looks_like_goal(message: str) -> bool:
     return bool(
         re.search(r"目标|减脂|减肥|增肌|塑形|重塑|耐力|体能", message)
         and re.search(r"\d|月|日|前", message)
+    )
+
+
+def _looks_like_onboarding(message: str) -> bool:
+    """Explicit requests to fill the profile; not a question about gaps."""
+    if re.search(r"缺什么|还缺|差什么|哪些没填", message):
+        return False
+    if re.search(r"怎么|如何|为什么|吗|？|\?", message):
+        return False
+    return bool(
+        re.search(
+            r"建档|完善档案|完善资料|补全档案|补全资料|填档案|填资料|"
+            r"开始建档|帮我建档|设置档案|录入档案",
+            message,
+        )
     )
 
 
@@ -3510,8 +3526,25 @@ async def handle_turn(
 
     intent_override: str | None = None
     diet_draft: dict | None = None
+    onboarding_draft: dict | None = None
     if pending is not None and pending.kind == "draft":
-        if pending.capability_id == DIET:
+        if pending.capability_id == ONBOARD:
+            # A real question exits the flow instead of being parsed as a slot.
+            # "什么器械都没有" is an answer, not a question.
+            is_question = bool(re.search(r"怎么|为什么|吗|？|\?", text))
+            if (
+                not is_question
+                and "什么" in text
+                and not re.search(r"什么器械|没什么|什么也|什么都不", text)
+            ):
+                is_question = True
+            if is_question:
+                cancel_pending(db, session, pending)
+                pending = None
+            else:
+                onboarding_draft = dict(pending.payload or {})
+                intent_override = ONBOARD
+        elif pending.capability_id == DIET:
             if not _looks_like_diet_slot_answer(text):
                 cancel_pending(db, session, pending)
                 pending = None
@@ -3662,6 +3695,9 @@ async def handle_turn(
                 payload=batch,
                 reply=batch_reply,
             )
+
+    if intent_override is None and _looks_like_onboarding(text):
+        intent_override = ONBOARD
 
     if intent_override is None and _looks_like_plan_configure(text):
         from .capabilities.plan_configure import resolve as resolve_configure
@@ -4453,7 +4489,71 @@ async def handle_turn(
             "pending": serialize_pending(active),
         }
 
-    if intent_override == GOAL or (
+    if intent_override == ONBOARD:
+        from .onboarding import resolve as resolve_onboarding
+
+        resolution = resolve_onboarding(
+            db,
+            user_id,
+            text,
+            draft=onboarding_draft,
+        )
+        if resolution.get("terminal"):
+            return _finish_reply(
+                db,
+                session,
+                turn,
+                started,
+                intent=ONBOARD,
+                reply=str(
+                    resolution.get("question") or "档案已经完整了。"
+                ),
+            )
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            if not payload.get("batch"):
+                return _finish_reply(
+                    db,
+                    session,
+                    turn,
+                    started,
+                    intent=ONBOARD,
+                    reply=str(
+                        resolution.get("reply")
+                        or "档案已经完整了，想改哪一项可以直接说。"
+                    ),
+                )
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=BATCH,
+                payload=payload,
+                reply=str(
+                    resolution.get("reply")
+                    or payload.get("reply")
+                    or "确认后写入档案。"
+                ),
+            )
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=ONBOARD,
+            payload={
+                "slots": resolution.get("slots") or {},
+                "skipped": resolution.get("skipped") or [],
+                "asked": resolution.get("asked") or [],
+            },
+            reply=str(
+                resolution.get("question") or "继续说说你的档案。"
+            ),
+            kind="draft",
+        )
+
+    elif intent_override == GOAL or (
         intent_override is None and _looks_like_goal(text)
     ):
         from .capabilities.profile import resolve as resolve_goal

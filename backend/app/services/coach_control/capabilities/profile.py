@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import re
-from datetime import date
+from datetime import date, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ....models import Exercise, Goal, Profile
+from ....models import Exercise, Goal, Profile, utcnow
 from ...food_text import parse_food_date
 from ...plan_validator import injury_tags
 from ...queries import active_goal, active_program
@@ -59,14 +59,82 @@ INJURY_CAPABILITY = register(
 PROFILE_LABELS = {
     "nickname": "昵称",
     "sex": "性别",
+    "birth_date": "出生日期",
     "height_cm": "身高",
     "experience": "经验",
+    "weekly_days": "每周训练天数",
+    "session_minutes": "单次时长",
 }
 EXPERIENCE_WORDS = {
     "beginner": ("新手", "入门", "刚开始"),
     "intermediate": ("中级", "进阶"),
     "advanced": ("高级", "老手", "很多年"),
 }
+CHINESE_NUMBERS = {
+    "一": 1,
+    "二": 2,
+    "三": 3,
+    "四": 4,
+    "五": 5,
+    "六": 6,
+    "七": 7,
+}
+
+
+def _extract_birth_date(message: str) -> date | None:
+    """Parse a birth month or age, never a full birthday we do not need.
+
+    One month granularity is enough for age bands and nutrition targets. A
+    bare year is allowed because users often say only "1995 年".
+    """
+    match = re.search(
+        r"(19\d{2}|20\d{2})\s*[年./-]\s*(\d{1,2})",
+        message,
+    )
+    if match is not None:
+        year = int(match.group(1))
+        month = int(match.group(2))
+        if 1900 <= year <= date.today().year and 1 <= month <= 12:
+            return date(year, month, 1)
+    match = re.search(r"(19\d{2}|20\d{2})\s*年?", message)
+    if match is not None:
+        year = int(match.group(1))
+        if 1900 <= year <= date.today().year:
+            return date(year, 1, 1)
+    match = re.search(r"(\d{2})\s*岁", message)
+    if match is not None:
+        age = int(match.group(1))
+        if 12 <= age <= 90:
+            return date(date.today().year - age, 1, 1)
+    return None
+
+
+def _extract_weekly_days(message: str) -> int | None:
+    match = re.search(
+        r"(?:每周|一周)\s*([1-7一二三四五六七])\s*(?:练|次|天)",
+        message,
+    )
+    if match is None:
+        match = re.search(r"([1-7一二三四五六七])\s*(?:练|次|天)", message)
+    if match is None:
+        return None
+    raw = match.group(1)
+    value = CHINESE_NUMBERS.get(raw) or int(raw)
+    return value if 1 <= value <= 7 else None
+
+
+def _extract_session_minutes(message: str) -> int | None:
+    if "一个半小时" in message:
+        return 90
+    if "半小时" in message:
+        return 30
+    if "一小时" in message or "1小时" in message:
+        return 60
+    match = re.search(r"(\d{2,3})\s*分钟", message)
+    if match is None:
+        return None
+    value = int(match.group(1))
+    return value if 10 <= value <= 240 else None
 
 
 def _extract_nickname(message: str) -> str | None:
@@ -146,6 +214,15 @@ def resolve_update(message: str) -> dict:
     sex = _extract_sex(message)
     if sex:
         payload["sex"] = sex
+    birth_date = _extract_birth_date(message)
+    if birth_date is not None:
+        payload["birth_date"] = birth_date.isoformat()
+    weekly_days = _extract_weekly_days(message)
+    if weekly_days is not None:
+        payload["weekly_days"] = weekly_days
+    session_minutes = _extract_session_minutes(message)
+    if session_minutes is not None:
+        payload["session_minutes"] = session_minutes
     experience = _extract_experience(message)
     if experience:
         payload["experience"] = experience
@@ -153,21 +230,36 @@ def resolve_update(message: str) -> dict:
         return {
             "ready": False,
             "questions": [
-                "想改昵称、性别、身高还是训练经验？例如“身高178”。"
+                "想改昵称、性别、身高、出生日期、训练频率还是训练经验？"
+                "例如“身高178”或“每周3天，每次45分钟”。"
             ],
         }
     labels = []
-    for field in ("nickname", "sex", "height_cm", "experience"):
+    for field in (
+        "nickname",
+        "sex",
+        "birth_date",
+        "height_cm",
+        "experience",
+        "weekly_days",
+        "session_minutes",
+    ):
         if field in payload:
             value = payload[field]
             if field == "sex":
                 value = "女" if value == "female" else "男"
+            elif field == "birth_date":
+                value = str(value)[:7]
             elif field == "experience":
                 value = {
                     "beginner": "新手",
                     "intermediate": "中级",
                     "advanced": "高级",
                 }.get(value, value)
+            elif field == "weekly_days":
+                value = f"每周 {value} 天"
+            elif field == "session_minutes":
+                value = f"每次 {value} 分钟"
             labels.append(f"{PROFILE_LABELS[field]} {value}")
     return {
         "ready": True,
@@ -380,8 +472,44 @@ def resolve_injuries(
     }
 
 
+UPDATE_FIELDS = (
+    "nickname",
+    "sex",
+    "birth_date",
+    "height_cm",
+    "experience",
+    "weekly_days",
+    "session_minutes",
+    "onboarded_at",
+)
+
+
+def _json_value(value):
+    """Make profile snapshots JSON-safe for the action ledger."""
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, date):
+        return value.isoformat()
+    return value
+
+
 def _profile_snapshot(profile: Profile, fields: tuple[str, ...]) -> dict:
-    return {field: getattr(profile, field) for field in fields}
+    return {field: _json_value(getattr(profile, field)) for field in fields}
+
+
+def _profile_value(field: str, value):
+    """Convert a JSON payload back to the column type on execute/undo."""
+    if value is None:
+        return None
+    if field == "birth_date":
+        return date.fromisoformat(str(value))
+    if field == "onboarded_at":
+        return datetime.fromisoformat(str(value))
+    if field == "height_cm":
+        return float(value)
+    if field in {"weekly_days", "session_minutes"}:
+        return int(value)
+    return value
 
 
 def execute_update(
@@ -394,11 +522,14 @@ def execute_update(
     if profile is None:
         profile = Profile(user_id=user_id)
         db.add(profile)
-    fields = ("nickname", "sex", "height_cm", "experience")
-    before = _profile_snapshot(profile, fields)
-    for field in fields:
+    before = _profile_snapshot(profile, UPDATE_FIELDS)
+    for field in UPDATE_FIELDS:
         if field in payload:
-            setattr(profile, field, payload[field])
+            setattr(profile, field, _profile_value(field, payload[field]))
+    # Conversational onboarding sets this only after all required slots were
+    # collected, so the profile is not marked complete by a partial edit.
+    if payload.get("mark_onboarded") and profile.onboarded_at is None:
+        profile.onboarded_at = utcnow()
     db.flush()
     goal = active_goal(db, user_id)
     if (
@@ -412,7 +543,7 @@ def execute_update(
         )
     return {
         "before": before,
-        "after": _profile_snapshot(profile, fields),
+        "after": _profile_snapshot(profile, UPDATE_FIELDS),
     }
 
 
@@ -426,8 +557,8 @@ def undo_update(
         profile = Profile(user_id=user_id)
         db.add(profile)
     for field, value in (before or {}).items():
-        if field in {"nickname", "sex", "height_cm", "experience"}:
-            setattr(profile, field, value)
+        if field in UPDATE_FIELDS:
+            setattr(profile, field, _profile_value(field, value))
     db.flush()
     return {"restored": True}
 
@@ -484,6 +615,13 @@ GOAL_TYPES = {
     "耐力": "endurance",
     "体能": "endurance",
 }
+
+
+def extract_goal_type(message: str) -> str | None:
+    for label, value in GOAL_TYPES.items():
+        if label in message:
+            return value
+    return None
 
 
 def resolve(message: str) -> dict:

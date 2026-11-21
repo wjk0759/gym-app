@@ -245,7 +245,15 @@ ACTION_SPECS: dict[str, ActionSpec] = {
     "profile.update": ActionSpec(
         "profile.update",
         ("以后叫我小王", "身高178", "我是女生", "我是中级训练者"),
-        ("nickname", "sex", "height_cm", "experience"),
+        (
+            "nickname",
+            "sex",
+            "birth_date",
+            "height_cm",
+            "experience",
+            "weekly_days",
+            "session_minutes",
+        ),
         "profile",
     ),
     "profile.update_injuries": ActionSpec(
