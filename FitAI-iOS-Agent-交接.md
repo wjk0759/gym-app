@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`4607b96`（AI 教练 Release 1：只读问答 + 日历/反编造伤病 + 完整 `/coach/turns` 路由与记忆修复 + 对话式建档；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码仍 `7d03219`，Mac 已跑 `FitAITests` **144/144**、UI **7/7**，iOS `7d03219` 已装 Wu-Tang；`/health/ready` **200**；Flyway **V44**；后端 **697 passed**、QA **76/76**、Ruff 通过；**Mac 正在对 4607b96 复测 N29–N33 + 建档**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`4607b96`（AI 教练 Release 1：只读问答 + 日历/反编造伤病 + 完整 `/coach/turns` 路由与记忆修复 + 对话式建档；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码仍 `7d03219`，Mac 已跑 `FitAITests` **144/144**、UI **7/7**，iOS `7d03219` 已装 Wu-Tang；`/health/ready` **200**；Flyway **V44**；后端 **697 passed**、QA **76/76**、Ruff 通过；**Mac 对 39 复测 N29/N30/N31 仍 P1；4607b96 待复测 N29–N33 + 建档**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -69,6 +69,16 @@
   - 不要从助手回复里抽记忆（上一轮已修）；建档回答也不能被记成用户偏好。
   - 不要在未确认时写 profile/体重/目标/器械。
 - 仍 BLOCKED：真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
+### 2026-11-21 · macOS（39cca40 复测：N29/N30/N31 仍阻断）
+
+- 环境：生产后端 `39cca40`；iOS `7d03219`；账号 `macqa_coach`；真实 3 练计划 + `app_context`。
+- **N29 仍 P1**：“我上周吃了什么” → `diet.log_food` + `draft:diet.log_food`，回复“这道菜…请补充食物”；带/不带 context 都复现。`最近饮食怎么样` 带 context 已能走 7 天事实。
+- **N30 仍 P1**：“把周五 C 的持瓶自重深蹲加一组” → `coach.answer`、无 pending；“再加一组” → `training.edit_day_exercise` 但报“没有找到「一组」这个动作”。改“3 组”/“删掉”正常；旧 `/agent/chat` 的“加一组”正常。
+- **N31 仍 P1**：`/coach/memories` 44 条、`/agent/memories` 27 条；只在 coach 可见的 17 条含 pending schedule、squat_substitution、goal 冲突。`为什么这样安排计划` 仍称“深蹲都换成前弓步”，但计划是持瓶自重深蹲；`我有伤病吗` 引用记忆胸痛而 profile injuries 为空。Windows 只修了未来抽取，未过滤/迁移旧 active 记忆；`build_memory_book` 仍直接查 `AIMemory`。
+- **N32 部分修复**：“为什么这样安排计划”无 context 已不再生成新计划；“第一周练什么”无 context 仍说没安排，带 context 只说 3 练、不列每天。
+- **N33 P2**：“我有伤病吗” → `intent=safety`，只给就医模板，没有回答档案 `injuries=[]`。
+- 已通过：上周/本周训练 0、最近饮食（带 context）、档案完整、计划频率、体重趋势、上次训练 0、改期卡。
+- 本轮未部署；iOS 仍 `7d03219`，后端仍 `39cca40`。N29/N30/N31 优先，N32/N33 一起收口。
 
 ### 2026-11-21 · Windows（完整 `/coach/turns` 冒烟：路由、额度、记忆）
 

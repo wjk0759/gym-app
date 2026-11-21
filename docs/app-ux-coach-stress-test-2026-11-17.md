@@ -1647,3 +1647,81 @@ summary “目标体重 65kg…” → 68kg
 
 - 本轮只压测，未改代码、未部署；iOS 仍 `7d03219`，后端仍 `1595c36`。
 - N29/N30/N31 建议作为下一轮 P1；N32 为 P2，需明确 `app_context` 缺失时的只读降级。
+
+## 三十七、2026-11-21 `39cca40` 复测：N29/N30/N31 仍阻断
+
+- 环境：生产后端 `39cca40`；iOS `7d03219`；账号 `macqa_coach`；真实 3 练计划 + `app_context`；无训练/饮食记录，7 条 body_metrics。
+- 结论：Windows 修复了“为什么这样安排计划”触发新计划的问题，`最近饮食怎么样` 也能走 7 天事实；但 N29/N30/N31 仍复现，本轮不部署。
+
+### N29 仍 P1：上周吃了什么被写成饮食草稿
+
+```text
+我上周吃了什么
+→ intent=diet.log_food
+→ pending=draft:diet.log_food
+→ “这道菜我还没有估算出来…请补充食物和份量”
+```
+
+重复两次一致；带/不带 `app_context` 都一样。用户问历史，系统却准备记录今天的一餐。对照 `最近饮食怎么样` 带 context 可正确走 `coach.answer` + 7 天事实。
+
+### N30 仍 P1：改课“加一组”自然语言退化
+
+```text
+把周五全身 C 的持瓶自重深蹲加一组
+→ intent=coach.answer, pending=None
+→ “深蹲已经换成前弓步了，这组加到前弓步上”
+
+再把周五全身 C 的持瓶自重深蹲加一组
+→ 仍 coach.answer, pending=None
+
+周五全身 C 的持瓶自重深蹲再加一组
+→ intent=training.edit_day_exercise
+→ “没有找到「一组」这个动作”
+```
+
+对照：
+
+- `持瓶自重深蹲改成 3 组` / `持瓶自重深蹲删掉` 能正常出 `training.edit_day_exercise` 卡。
+- 旧 `/agent/chat` 的同句“加一组”能出 `modify_workout` 卡。
+- 泛称 `深蹲改成 3 组` / `深蹲换成前弓步` 仍报“没有在计划里找到这个动作”。
+
+### N31 仍 P1：新控制面继续读到旧记忆
+
+- `/coach/memories` **44** 条，`/agent/memories` **27** 条；只在 coach 可见的 17 条包括：
+  - `friday_full_body_c_squat`（待确认）
+  - `schedule_adjustment` / `full_body_c_day`（已调整）
+  - `squat_substitution` / `friday_fullbody_c_lunge`（换成前弓步）
+  - 多条 goal（减脂/增肌/体重目标冲突）
+- `为什么这样安排计划` 仍会说“深蹲都换成前弓步、卧推加次数”，但计划实际是持瓶自重深蹲；`我有伤病吗` 会引用记忆里的胸痛，而 profile injuries 为空。
+- Windows 的“记忆提取只发送 user_message”修复了未来污染，但没有过滤/迁移已有的 active 记忆；`build_memory_book` 仍直接查 `AIMemory`，未应用 `is_pending_action_fact()` / goal 过滤。
+
+### N32 部分修复
+
+- `为什么这样安排计划` 无 `app_context` 已从 `training.generate_plan` 改为 `coach.answer`，不再生成新计划。
+- `第一周练什么` 无 context 仍答“本周没有安排训练”；带 context 只答“本周计划 3 练，已完成 0 次”，不列每天/动作。
+- `第一周每天练什么` 仍不列每天，属于 P2 信息不足。
+
+### 新发现 N33 P2：伤病问题被 safety 拦截
+
+```text
+我有伤病吗
+→ intent=safety
+→ “这个我不能替你判断要不要就医…”
+```
+
+档案 `injuries=[]`，应可回答“档案无伤病记录；记忆里有一条胸痛，需要确认”；现在直接走就医安全回复，没有回答档案事实。安全优先可以，但应补充档案事实，而不是完全不答。
+
+### 已通过
+
+- `我上周练了几次` / `我这周练了几次` → 0 次。
+- `最近饮食怎么样`（带 context）→ 最近 7 天 0 条。
+- `我的档案完整吗` → 完整。
+- `我的计划是每周几练` → 3 练、模板一三五（带/不带 context 均正确）。
+- `最近体重变化` → body trend 正常。
+- `我上次练了什么` → 28 天无记录。
+- “把周五 C 改到周日” → 正常改期卡。
+
+### 部署状态
+
+- 本轮未部署：iOS 仍 `7d03219`；生产后端仍 `39cca40`。
+- N29/N30/N31 继续阻断；N32/N33 下一轮一起收口。
