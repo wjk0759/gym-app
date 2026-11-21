@@ -17,7 +17,7 @@ from app.models import (
     User,
     WorkoutSession,
 )
-from app.services.agent import REVIEW_TZ, _plan_week_adherence
+from app.services.agent import REVIEW_TZ, _plan_week_adherence, generate_weekly_review
 
 
 @pytest.fixture()
@@ -145,3 +145,53 @@ def test_plan_week_adherence_uses_schedule_and_skips(db):
     assert result["skipped"] == 1
     assert result["missed"] == 1
     assert result["rate"] == 0.5
+
+
+def test_weekly_review_uses_readiness_for_deload(db):
+    now = datetime.now(timezone.utc)
+    db.add(User(id="user-2"))
+    db.add(
+        Profile(
+            user_id="user-2",
+            nickname="小林",
+            sex="male",
+            weekly_days=3,
+            session_minutes=60,
+        )
+    )
+    db.add(
+        Exercise(
+            slug="goblet-squat",
+            name_zh="高脚杯深蹲",
+            muscle_group="legs",
+            equipment="dumbbell",
+            is_compound=True,
+            contraindications=[],
+        )
+    )
+    for index, days_ago in enumerate((1, 2, 4, 6, 10, 15, 20, 26)):
+        session = WorkoutSession(
+            id=f"readiness-{index}",
+            user_id="user-2",
+            started_at=now - timedelta(days=days_ago),
+            duration_min=60,
+        )
+        db.add(session)
+        db.add(
+            SetLog(
+                session_id=session.id,
+                exercise_slug="goblet-squat",
+                set_index=1,
+                weight_kg=24,
+                reps=10,
+                rpe=9 if index < 4 else 6,
+                completed=True,
+            )
+        )
+    db.commit()
+
+    review = generate_weekly_review(db, "user-2")
+
+    assert review["readiness"]["status"] == "high_risk"
+    assert review["stats"]["acwr"] >= 1.5
+    assert any("减载" in item for item in review["actions"])

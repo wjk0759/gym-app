@@ -677,6 +677,26 @@ def _looks_like_plan_restore(message: str) -> bool:
     )
 
 
+def _looks_like_recovery_question(message: str) -> bool:
+    """Read-only recovery questions should not become plan-change proposals."""
+    if re.search(
+        r"减量|加量|减载|降.{0,4}(?:组|重量)|加.{0,4}组|"
+        r"调整.{0,6}计划|计划.{0,6}调整|重新.{0,4}计划|生成.{0,4}计划",
+        message,
+    ):
+        return False
+    if re.search(
+        r"恢复|疲劳|太累|酸痛|睡不好|没精神|readiness|"
+        r"能练吗|要不要休息",
+        message,
+    ):
+        return True
+    return bool(
+        re.search(r"状态", message)
+        and re.search(r"训练|身体|最近|今天|这周", message)
+    )
+
+
 def _looks_like_plan_adjust(message: str) -> bool:
     return bool(
         re.search(r"调整.{0,6}计划|计划.{0,6}调整", message)
@@ -1065,6 +1085,10 @@ def _looks_like_diet_review(message: str) -> bool:
 
 def _looks_like_body_review(message: str) -> bool:
     if _looks_like_body_delete(message):
+        return False
+    # "身体状态怎么样" is a training-load/readiness question, not a body
+    # measurement trend. Keep the two fact blocks separate.
+    if re.search(r"恢复|疲劳|太累|酸痛|睡不好|没精神|状态", message):
         return False
     return bool(
         re.search(r"体重|体脂|腰围|身体|身材|目标进度", message)
@@ -4424,7 +4448,12 @@ async def handle_turn(
             reply=(resolution.get("questions") or ["要应用哪次体型分析？"])[0],
         )
 
-    if intent_override is None and _looks_like_plan_adjust(text):
+    recovery_question = _looks_like_recovery_question(text)
+    if (
+        intent_override is None
+        and not recovery_question
+        and _looks_like_plan_adjust(text)
+    ):
         from .capabilities.plan import resolve_adjust
 
         resolution = resolve_adjust(db, user_id, text)

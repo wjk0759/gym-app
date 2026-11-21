@@ -3838,6 +3838,9 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
     context = build_coach_context(db, user_id)
     nutrition = context.get("nutrition_7d") or {}
     program = active_program(db, user_id)
+    from .coach_control.readiness import snapshot as readiness_snapshot
+
+    readiness = readiness_snapshot(db, user_id, now=now)
     adherence = _plan_week_adherence(
         db,
         program,
@@ -3939,6 +3942,24 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
         elif current["average_rpe"] <= 5.5:
             actions.append("下一次在动作稳定时加 2.5% 重量或 +1 次，逐步增加刺激")
 
+    # Adaptive periodization: the 7-day load against the 28-day average decides
+    # whether next week should deload, hold, or progress. This is deterministic
+    # and runs even when the user never records sleep or HRV.
+    if readiness["status"] == "high_risk":
+        if "近 7 天负荷明显高于前 3 周平均" not in watchouts:
+            watchouts.append("近 7 天负荷明显高于前 3 周平均")
+        if not any("减载" in item for item in actions):
+            actions.append(
+                "下周安排减载：主项降 1 组或 5% 重量，RPE 控制在 7–8，"
+                "连续两天疲劳就休息"
+            )
+    elif readiness["status"] == "strained":
+        if not any("降 1 组" in item for item in actions):
+            actions.append("下一次同动作降 1 组，先不加重量，把 RPE 压到 7–8")
+    elif readiness["status"] == "fresh":
+        if not any("加 2.5%" in item for item in actions):
+            actions.append("恢复窗口充足，下一次主项稳定时可加 2.5% 或 +1 次")
+
     if previous["volume_kg"] > 0 and current["volume_kg"] > previous["volume_kg"] * 1.1:
         wins.append("训练容量较上周提升")
     elif previous["volume_kg"] > 0 and current["volume_kg"] < previous["volume_kg"] * 0.8:
@@ -3984,6 +4005,10 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
             ),
             "volume_kg": current["volume_kg"],
             "average_rpe": current["average_rpe"],
+            "readiness_status": readiness["status"],
+            "acute_load": readiness["acute_load"],
+            "chronic_weekly_load": readiness["chronic_weekly_load"],
+            "acwr": readiness["acwr"],
             "average_duration_min": current["average_duration_min"],
             "previous_volume_kg": previous["volume_kg"],
             "nutrition_logged_days": logged_days,
@@ -3998,6 +4023,7 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
         "wins": wins[:3],
         "watchouts": watchouts[:3],
         "actions": actions[:3],
+        "readiness": readiness,
         "generated_at": now.isoformat(),
     }
 

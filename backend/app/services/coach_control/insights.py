@@ -30,6 +30,7 @@ from ...models import (
 )
 from ..lexicon import EQUIPMENT_LABELS
 from ..queries import active_goal
+from .readiness import snapshot as readiness_snapshot
 
 
 def _as_utc(value: datetime) -> datetime:
@@ -359,6 +360,33 @@ def _profile_summary(db: Session, profile: Profile) -> str:
     )
 
 
+def _recovery_summary(db: Session, user_id: str) -> str:
+    """Describe training-load readiness with deterministic numbers.
+
+    Only session frequency/duration/RPE/volume are available today. Sleep and
+    HRV are not synced, so the copy must stay at "恢复压力", not medical advice.
+    """
+    payload = readiness_snapshot(db, user_id)
+    metrics = [
+        f"近 7 天 {payload['sessions_7d']} 次",
+        f"近 28 天 {payload['sessions_28d']} 次",
+    ]
+    if payload.get("acwr") is not None:
+        metrics.append(f"ACWR {payload['acwr']:.2f}")
+    if payload.get("average_rpe_7d") is not None:
+        metrics.append(f"平均 RPE {payload['average_rpe_7d']}")
+    if payload.get("days_since_last") is not None:
+        metrics.append(f"距上次训练 {payload['days_since_last']} 天")
+    lines = [
+        f"恢复状态：{payload['summary']}",
+        "负荷指标：" + "，".join(metrics) + "。",
+    ]
+    actions = [str(item) for item in payload.get("actions") or []]
+    if actions:
+        lines.append("建议：" + "；".join(actions))
+    return "\n".join(lines)
+
+
 def build_readonly_context(
     db: Session,
     user_id: str,
@@ -399,6 +427,24 @@ def build_readonly_context(
         sections.append(_nutrition_summary(db, user_id, text))
     if any(word in text for word in ("体重", "体脂", "腰围", "围度", "身体", "变化", "减脂", "增肌")):
         sections.append(_body_summary(db, user_id))
+    if any(
+        word in text
+        for word in (
+            "恢复",
+            "疲劳",
+            "太累",
+            "酸痛",
+            "睡不好",
+            "没精神",
+            "readiness",
+            "减载",
+            "能练吗",
+            "要不要休息",
+            "训练状态",
+            "身体状态",
+        )
+    ):
+        sections.append(_recovery_summary(db, user_id))
     if any(word in text for word in ("计划", "安排", "为什么", "分化", "频率", "训练日")):
         sections.append(_plan_summary(program))
 
@@ -408,6 +454,7 @@ def build_readonly_context(
         "以下是服务端实时查询到的事实，只能基于这些事实回答，不要编造；"
         "事实里没有的伤病、疼痛、体态或动作理由不要推断，"
         "不要使用“治疗/矫正/康复”等医疗结论。"
+        "恢复事实只基于训练负荷，不是医学诊断；不要编造睡眠、HRV 或伤病数据。"
         "问档案时只列事实里写出的缺失项；事实说已完整就回答完整，"
         "不要把已填项或未列出的项（如睡眠、饮食）说成缺失。"
         "解释计划时只依据给出的模板周几、每日主题和动作，"
