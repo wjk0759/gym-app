@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`58c8335`（AI 教练阶段 3 代码收口 + 硬化：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时/开关/分页、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练、多习惯提醒、并发保护和主动教练开关但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V45**；后端 **740 passed**、QA **76/76**、Ruff 通过；**Mac 复测 22adfbc：N29/N30/N31/N33/N37 通过；N32/N34/N35/N36 已修待复测**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`58c8335`（AI 教练阶段 3 代码收口 + 硬化：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时/开关/分页、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练、多习惯提醒、并发保护和主动教练开关但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V45**；后端 **740 passed**、QA **76/76**、Ruff 通过；**Mac 复测 cc18ebf：N34/N35/N36/动作器械解释通过，N41 已修；N38/N39/N40 P2 仍在；iOS 151/151 + SE 7/7；不部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -35,6 +35,28 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-21 · macOS（b5494c6 复测：N34/N35/N36 通过，N32 部分与 4 个新问题）
+
+- 环境：生产后端 `b5494c6`；iOS 源码 `b5494c6`，真机仍 `7d03219`；账号 `macqa_coach`；真实 Mon/Wed/Fri 3 练计划 + `app_context`（today 2026-11-21）。
+- **N34 通过**：
+  - `下周一到周三出差` → `coach.batch`，2 个 `training.reschedule`：11/23 全身 A → 11/26，11/25 全身 B → 11/28；不再只给训练建议。
+  - `11月23到26号出差` → 2 个 reschedule；`下周出差三天` / `下周一到周三住院` 同样出卡；`下周一加班` → 单张 `training.reschedule`（11/23 → 11/24）。
+  - `下周一加班` 确认 200、undo 200（`restored=true, deleted=true`）；`下周一到周三出差，训练跳过不补了` → 2 个 `training.skip`。
+  - `这周末婚礼` / `明天加班` → “本来没有训练安排，不用改”。
+  - `接下来15天都在外地` → 6 次训练超过单次 5 次上限，直接说明并让缩小范围，不生成半截方案。
+- **N35 通过**：`接下来30天都在外地，训练怎么办` → `training.life_event`，说明跨度 30 天、逐次顺延会推乱计划，无 pending。
+- **N36 通过（canonical）**：
+  - `每天10点提醒我喝水和睡觉` → `ui.configure_reminders`，`reminder_items` 为 hydration + sleep，均 10:00；确认 receipt 为“喝水、睡眠提醒已设为 10:00。”
+  - `每天晚上10点提醒我喝水和睡觉` → 两项均 22:00；`关闭喝水和睡觉提醒` → 两项关闭；`喝水和称重`、`睡觉和喝水` 顺序都能拆出两项。
+- **N32 部分通过**：`第一周每天练什么` / `本周每天练什么` / `下周每天练什么` 已回复每日明细（周一/三/五，含待训练状态）。
+- **回归通过**：N29 上周吃了什么、N30 加一组、N31 why/记忆、N33 伤病、N37 active_workout RPE 9.5 不加重量；readiness、周复盘、按动作进阶、上周 0 次均正常。
+- **N38 P2（新）**：所有周安排回复的每日行前面是字面 `?`，例如 `? 周一 11月16日：全身 A（待训练）`。`runtime.py` `_week_reply` 写成 `f"? {line}"`，fallback 是 `"????????????"`；用户会看到坏字符。
+- **N39 P2（新）**：`第二周每天练什么` / `第三周每天练什么` / `第2周每天练什么` / `第二周训练安排` 全部落到 `training.preview_next`，只回“下一练是周一”，不列该周每天。`第一周` 能命中只是因为包含子串“一周”；`_looks_like_week_schedule` 未匹配“第 X 周”。
+- **N40 P2（新）**：`每天10点提醒我喝水，晚上10点提醒我睡觉` 两项都排成 10:00，睡眠时间被静默改错；多习惯只取第一个时间，卡片/confirm 也只显示第一项时间。
+- **N41 P3（新）**：30 天窗口回复说“要跳过的话直接说‘都跳过’”，但真说 `接下来30天都在外地，都跳过` 不会生成跳过 batch，而是让把范围缩小到一周内；文案给了做不到的操作。
+- iOS：`xcodegen generate` + clean `xcodebuild test`；iPhone 17 全量 **151/151**（含 UI），iPhone SE 3 UI **7/7**；`WorkoutCoachSheet`、`AgentReminderItem`/`reminderItems` 编译通过；未安装新包，内嵌教练 sheet 真机交互未验收。
+- 本轮不部署：iOS 真机仍 `7d03219`；生产后端 `b5494c6`，`/health/ready` 200。N38/N39/N40 为 P2，修完再装包。
 
 ### 2026-11-21 · macOS（3d40b36 Release 2 复测：N29–N36）
 
