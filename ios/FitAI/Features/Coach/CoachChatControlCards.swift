@@ -254,6 +254,16 @@ extension CoachChatView {
     }
 
     private func reminderPendingText(_ pending: CoachPendingState) -> String {
+        if let items = pending.payload?.reminderItems, !items.isEmpty {
+            let labels = items.map { habitReminderLabel($0.kind) }
+                .joined(separator: "、")
+            guard pending.payload?.enabled != false else {
+                return "关闭\(labels)提醒"
+            }
+            let hour = items.first?.hour ?? pending.payload?.hour ?? 19
+            let minute = items.first?.minute ?? pending.payload?.minute ?? 0
+            return "每天 \(String(format: "%02d:%02d", hour, minute)) 提醒\(labels)"
+        }
         let label = habitReminderLabel(pending.payload?.kind)
         guard pending.payload?.enabled != false else {
             return "关闭\(label)提醒"

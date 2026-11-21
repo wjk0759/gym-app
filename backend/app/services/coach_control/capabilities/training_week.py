@@ -28,6 +28,24 @@ CAPABILITY = register(
 )
 
 WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+_CN_WEEK = {
+    "一": 1,
+    "二": 2,
+    "三": 3,
+    "四": 4,
+    "五": 5,
+    "六": 6,
+    "七": 7,
+    "八": 8,
+}
+
+
+def _plan_week_index(message: str) -> int | None:
+    match = re.search(r"第\s*([一二三四五六七八1-8])\s*周", message)
+    if match is None:
+        return None
+    raw = match.group(1)
+    return int(raw) if raw.isdigit() else _CN_WEEK.get(raw)
 
 
 def _week_start(message: str, today: date) -> date:
@@ -55,30 +73,50 @@ def resolve(db: Session, user_id: str, message: str, context: dict) -> dict:
             },
         }
     today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
-    start = _week_start(message, today)
-    end = start + timedelta(days=6)
-    chosen = []
-    for item in days:
-        if not isinstance(item, dict):
-            continue
-        raw = str(item.get("date") or "")
-        try:
-            when = date.fromisoformat(raw) if raw else None
-        except ValueError:
-            when = None
-        if when is None or not start <= when <= end:
-            continue
-        chosen.append((when, item))
-    chosen.sort(key=lambda pair: pair[0])
-    monday = today - timedelta(days=today.weekday())
-    if start == monday:
-        label = "本周"
-    elif start == monday + timedelta(days=7):
-        label = "下周"
-    elif start == monday + timedelta(days=14):
-        label = "下下周"
+    plan_week = _plan_week_index(message)
+    if plan_week is not None:
+        chosen = []
+        for item in days:
+            if not isinstance(item, dict):
+                continue
+            if int(item.get("week_index") or 0) != plan_week:
+                continue
+            raw = str(item.get("date") or "")
+            try:
+                when = date.fromisoformat(raw) if raw else None
+            except ValueError:
+                when = None
+            if when is not None:
+                chosen.append((when, item))
+        chosen.sort(key=lambda pair: pair[0])
+        label = f"第 {plan_week} 周"
+        start = chosen[0][0] if chosen else today
+        end = chosen[-1][0] if chosen else today
     else:
-        label = "上周" if start < monday else "未来一周"
+        start = _week_start(message, today)
+        end = start + timedelta(days=6)
+        chosen = []
+        for item in days:
+            if not isinstance(item, dict):
+                continue
+            raw = str(item.get("date") or "")
+            try:
+                when = date.fromisoformat(raw) if raw else None
+            except ValueError:
+                when = None
+            if when is None or not start <= when <= end:
+                continue
+            chosen.append((when, item))
+        chosen.sort(key=lambda pair: pair[0])
+        monday = today - timedelta(days=today.weekday())
+        if start == monday:
+            label = "本周"
+        elif start == monday + timedelta(days=7):
+            label = "下周"
+        elif start == monday + timedelta(days=14):
+            label = "下下周"
+        else:
+            label = "上周" if start < monday else "未来一周"
     if not chosen:
         return {
             "ready": True,

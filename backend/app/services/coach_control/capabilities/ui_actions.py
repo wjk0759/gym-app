@@ -226,11 +226,13 @@ HABIT_WORDS = {
 }
 
 
-def _reminder_kind(message: str) -> str:
+def _reminder_kinds(message: str) -> list[str]:
+    """Return unique habit kinds in the order they were mentioned."""
+    kinds: list[str] = []
     for word, kind in HABIT_WORDS.items():
-        if word in message:
-            return kind
-    return "training"
+        if word in message and kind not in kinds:
+            kinds.append(kind)
+    return kinds
 
 
 def _reminder_time(message: str) -> tuple[int, int] | None:
@@ -259,19 +261,22 @@ def _reminder_time(message: str) -> tuple[int, int] | None:
 
 
 def resolve_reminders(message: str) -> dict:
-    kind = _reminder_kind(message)
-    label = HABIT_LABELS.get(kind)
+    kinds = _reminder_kinds(message)
+    kind = kinds[0] if kinds else "training"
+    labels = "、".join(HABIT_LABELS.get(item, item) for item in kinds)
     enabled = not bool(re.search(r"关闭|关掉|不要|取消", message))
     if not enabled:
         payload: dict = {"enabled": False}
-        if label is not None:
+        if len(kinds) == 1:
             payload["kind"] = kind
+        elif len(kinds) > 1:
+            payload["reminder_items"] = [{"kind": item} for item in kinds]
         return {
             "ready": True,
             "payload": payload,
             "summary": (
-                f"准备关闭{label}提醒。"
-                if label is not None
+                f"准备关闭{labels}提醒。"
+                if kinds
                 else "准备关闭训练提醒。"
             ),
         }
@@ -282,7 +287,21 @@ def resolve_reminders(message: str) -> dict:
             "questions": ["提醒设在几点？可以说“早上7点”或“20:30”。"],
         }
     hour, minute = parsed
-    if label is not None:
+    if len(kinds) > 1:
+        return {
+            "ready": True,
+            "payload": {
+                "enabled": True,
+                "reminder_items": [
+                    {"kind": item, "hour": hour, "minute": minute}
+                    for item in kinds
+                ],
+            },
+            "summary": (
+                f"准备设置每天 {hour:02d}:{minute:02d} 的{labels}提醒。"
+            ),
+        }
+    if kinds:
         return {
             "ready": True,
             "payload": {
@@ -292,7 +311,7 @@ def resolve_reminders(message: str) -> dict:
                 "minute": minute,
             },
             "summary": (
-                f"准备设置每天 {hour:02d}:{minute:02d} 的{label}提醒。"
+                f"准备设置每天 {hour:02d}:{minute:02d} 的{labels}提醒。"
             ),
         }
     return {

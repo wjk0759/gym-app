@@ -201,10 +201,54 @@ extension AppStore {
                     self.openCoachScreen(pending.payload?.screen)
                 }
                 if pending.capabilityID == "ui.configure_reminders" {
-                    let habitKind = pending.payload?.kind
-                    if let habitKind, habitKind != "training" {
+                    if let items = pending.payload?.reminderItems, !items.isEmpty {
                         if response.receipt?.enabled == false {
-                            self.disableHabitReminder(kind: habitKind)
+                            for item in items {
+                                self.disableHabitReminder(kind: item.kind)
+                            }
+                        } else {
+                            for item in items {
+                                let hour = item.hour
+                                    ?? response.receipt?.hour
+                                    ?? self.reminderHour
+                                let minute = item.minute
+                                    ?? response.receipt?.minute
+                                    ?? self.reminderMinute
+                                _ = await self.enableHabitReminder(
+                                    kind: item.kind,
+                                    hour: hour,
+                                    minute: minute
+                                )
+                            }
+                            if !self.notificationsEnabled {
+                                reminderNotice = "没有获得通知权限，提醒暂时不会推送。请到「设置 → 通知 → 叫练」中开启。"
+                            }
+                        }
+                    } else {
+                        let habitKind = pending.payload?.kind
+                        if let habitKind, habitKind != "training" {
+                            if response.receipt?.enabled == false {
+                                self.disableHabitReminder(kind: habitKind)
+                            } else {
+                                let hour = response.receipt?.hour
+                                    ?? pending.payload?.hour
+                                    ?? self.reminderHour
+                                let minute = response.receipt?.minute
+                                    ?? pending.payload?.minute
+                                    ?? self.reminderMinute
+                                let scheduled = await self.enableHabitReminder(
+                                    kind: habitKind,
+                                    hour: hour,
+                                    minute: minute
+                                )
+                                if !self.notificationsEnabled {
+                                    reminderNotice = "没有获得通知权限，提醒暂时不会推送。请到「设置 → 通知 → 叫练」中开启。"
+                                } else if !scheduled {
+                                    reminderNotice = "习惯提醒没有排上，请稍后再试。"
+                                }
+                            }
+                        } else if response.receipt?.enabled == false {
+                            self.disableReminders()
                         } else {
                             let hour = response.receipt?.hour
                                 ?? pending.payload?.hour
@@ -212,34 +256,15 @@ extension AppStore {
                             let minute = response.receipt?.minute
                                 ?? pending.payload?.minute
                                 ?? self.reminderMinute
-                            let scheduled = await self.enableHabitReminder(
-                                kind: habitKind,
+                            let count = await self.enableReminders(
                                 hour: hour,
                                 minute: minute
                             )
                             if !self.notificationsEnabled {
                                 reminderNotice = "没有获得通知权限，提醒暂时不会推送。请到「设置 → 通知 → 叫练」中开启。"
-                            } else if !scheduled {
-                                reminderNotice = "习惯提醒没有排上，请稍后再试。"
+                            } else if count == 0 {
+                                reminderNotice = "通知权限已开启，但当前还没有训练计划。生成计划后会自动安排提醒。"
                             }
-                        }
-                    } else if response.receipt?.enabled == false {
-                        self.disableReminders()
-                    } else {
-                        let hour = response.receipt?.hour
-                            ?? pending.payload?.hour
-                            ?? self.reminderHour
-                        let minute = response.receipt?.minute
-                            ?? pending.payload?.minute
-                            ?? self.reminderMinute
-                        let count = await self.enableReminders(
-                            hour: hour,
-                            minute: minute
-                        )
-                        if !self.notificationsEnabled {
-                            reminderNotice = "没有获得通知权限，提醒暂时不会推送。请到「设置 → 通知 → 叫练」中开启。"
-                        } else if count == 0 {
-                            reminderNotice = "通知权限已开启，但当前还没有训练计划。生成计划后会自动安排提醒。"
                         }
                     }
                 }

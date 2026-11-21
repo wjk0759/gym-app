@@ -99,6 +99,56 @@ def test_life_event_skips_when_user_will_not_make_up(db):
     }
 
 
+def test_life_event_without_training_word_still_builds_a_card(db):
+    context = _plan_context()
+    result = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "下周一到周三出差",
+            app_context=context,
+        )
+    )
+
+    assert result["intent"] == "coach.batch"
+    assert result["pending"]["capability_id"] == "coach.batch"
+    batch = result["pending"]["payload"]["batch"]
+    assert len(batch) == 2
+    assert {item["capability_id"] for item in batch} == {
+        "training.reschedule"
+    }
+
+
+def test_long_absence_explains_that_the_window_is_too_large(db):
+    context = _plan_context()
+    start = datetime.fromisoformat(
+        context["plan"]["days"][0]["date"]
+    )
+    context["plan"]["days"] = [
+        {
+            "id": f"long-{index}",
+            "date": (start + timedelta(days=offset)).date().isoformat(),
+            "title": f"第{index + 1}练",
+            "weekday": (start + timedelta(days=offset)).isoweekday(),
+            "completed": False,
+            "skipped": False,
+        }
+        for index, offset in enumerate((0, 2, 4, 7, 9, 11, 14, 16))
+    ]
+    result = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "接下来30天都在外地",
+            app_context=context,
+        )
+    )
+
+    assert result["intent"] == "training.life_event"
+    assert result["pending"] is None
+    assert "跨度" in result["reply"] or "跳过" in result["reply"]
+
+
 def test_life_event_without_training_is_terminal(db):
     context = _plan_context()
     context["plan"]["days"] = [context["plan"]["days"][2]]  # Friday only
@@ -175,6 +225,38 @@ def test_habit_reminder_parses_kind_and_time(db):
     assert sleep["payload"]["kind"] == "sleep"
     assert sleep["payload"]["hour"] == 22
     assert disable["payload"] == {"enabled": False, "kind": "hydration"}
+
+
+def test_multiple_habit_reminders_are_kept_together(db):
+    from app.services.coach_control.capabilities.ui_actions import (
+        resolve_reminders,
+    )
+
+    resolution = resolve_reminders("每天10点提醒我喝水和睡觉")
+
+    assert resolution["ready"] is True
+    items = resolution["payload"]["reminder_items"]
+    assert [item["kind"] for item in items] == ["hydration", "sleep"]
+    assert {item["hour"] for item in items} == {10}
+
+
+def test_first_week_schedule_lists_each_day(db):
+    context = _plan_context()
+    for item in context["plan"]["days"]:
+        item["week_index"] = 1
+
+    result = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "第一周每天练什么",
+            app_context=context,
+        )
+    )
+
+    assert result["intent"] == "training.week_schedule"
+    assert "胸日" in result["reply"]
+    assert "腿日" in result["reply"]
 
 
 def test_habit_reminder_routes_to_confirmation_card(db):

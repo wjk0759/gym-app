@@ -837,12 +837,17 @@ def _looks_like_onboarding(message: str) -> bool:
 
 
 def _looks_like_life_event(message: str) -> bool:
-    """A trip/work/family event must also mention training to be a reschedule."""
-    from .life_events import EVENT_WORDS, TRAINING_WORDS
+    """A trip/work/family event with a date window should reschedule training."""
+    from .life_events import EVENT_WORDS, TRAINING_WORDS, parse_event_window
 
-    return bool(
-        EVENT_WORDS.search(message) and TRAINING_WORDS.search(message)
-    )
+    if not EVENT_WORDS.search(message):
+        return False
+    if TRAINING_WORDS.search(message):
+        return True
+    # The coach chat is already a fitness context; "下周一至周三出差" without
+    # the word 训练 is still a request to protect the training week.
+    today = datetime.now(DIET_TZ).date()
+    return parse_event_window(message, today) is not None
 
 
 def _looks_like_progression_apply(message: str) -> bool:
@@ -1580,6 +1585,15 @@ def _training_reply(payload: dict) -> str:
         f"准备把「{payload.get('title') or '训练'}」"
         f"从 {payload.get('from_date')} 改到 {payload.get('to_date')}。确认后生效。"
     )
+
+
+def _week_reply(payload: dict) -> str:
+    """Chat text must include the daily lines; the card already shows wins."""
+    summary = str(payload.get("summary") or "????????????")
+    wins = [str(item) for item in payload.get("wins") or []]
+    if not wins:
+        return summary
+    return summary + "\n" + "\n".join(f"? {line}" for line in wins)
 
 
 def _pending_reply(
@@ -3187,7 +3201,7 @@ async def _dispatch_semantic_capability(
             started,
             capability_id=WEEK_SCHEDULE,
             payload=payload,
-            reply=payload.get("summary") or "本周安排已整理好。",
+            reply=_week_reply(payload),
             kind="insight",
         )
 
@@ -4212,7 +4226,7 @@ async def handle_turn(
             capability_id=WEEK_SCHEDULE,
             payload=payload,
         )
-        reply = payload.get("summary") or "本周训练安排已经整理好。"
+        reply = _week_reply(payload)
         turn.intent = WEEK_SCHEDULE
         turn.status = "completed"
         turn.reply = reply
@@ -6212,14 +6226,31 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         elif pending.capability_id == OPEN_SCREEN_UI:
             summary = f"已准备打开「{pending.payload.get('title') or '页面'}」"
         else:
-            habit_kind = pending.payload.get("kind")
-            habit_label = {
+            habit_labels = {
                 "hydration": "喝水",
                 "protein": "蛋白质",
                 "sleep": "睡眠",
                 "weight": "称重",
-            }.get(habit_kind)
-            if habit_label is not None:
+            }
+            reminder_items = pending.payload.get("reminder_items") or []
+            habit_kind = pending.payload.get("kind")
+            habit_label = habit_labels.get(habit_kind)
+            if reminder_items:
+                labels = "、".join(
+                    habit_labels.get(str(item.get("kind")), str(item.get("kind")))
+                    for item in reminder_items
+                    if isinstance(item, dict)
+                )
+                first = reminder_items[0] if isinstance(reminder_items[0], dict) else {}
+                if pending.payload.get("enabled") is False:
+                    summary = f"{labels}提醒已关闭。"
+                else:
+                    summary = (
+                        f"{labels}提醒已设为 "
+                        f"{int(first.get('hour') or pending.payload.get('hour') or 0):02d}:"
+                        f"{int(first.get('minute') or pending.payload.get('minute') or 0):02d}。"
+                    )
+            elif habit_label is not None:
                 summary = (
                     f"{habit_label}提醒已关闭。"
                     if pending.payload.get("enabled") is False
@@ -6244,6 +6275,7 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
             "day_id": pending.payload.get("day_id"),
             "screen": pending.payload.get("screen"),
             "kind": pending.payload.get("kind"),
+            "reminder_items": pending.payload.get("reminder_items"),
             "enabled": pending.payload.get("enabled"),
             "hour": pending.payload.get("hour"),
             "minute": pending.payload.get("minute"),

@@ -29,7 +29,8 @@ MAX_SHIFT_DAYS = 30
 # normal coaching conversation.
 EVENT_WORDS = re.compile(
     r"出差|旅行|旅游|回老家|探亲|加班|开会|培训|考试|婚礼|"
-    r"家里有事|生病|发烧|感冒|住院|手术|聚餐|应酬"
+    r"家里有事|生病|发烧|感冒|住院|手术|聚餐|应酬|"
+    r"在外地|外地|不在本地|出国|驻外"
 )
 TRAINING_WORDS = re.compile(
     r"训练|计划|练|怎么办|怎么练|挪|顺延|跳过|没时间|不方便"
@@ -210,6 +211,20 @@ def _next_week_duration(message: str, today: date) -> tuple[date, date] | None:
     return start, start + timedelta(days=count - 1)
 
 
+def _relative_duration(message: str, today: date) -> tuple[date, date] | None:
+    if not re.search(r"接下来|未来|后面|之后", message):
+        return None
+    if "一个月" in message:
+        return today, today + timedelta(days=29)
+    match = re.search(r"([一二两三四五六七八九十\d]+)\s*天", message)
+    if match is None:
+        return None
+    count = _cn_number(match.group(1))
+    if count is None or not 1 <= count <= 90:
+        return None
+    return today, today + timedelta(days=count - 1)
+
+
 def parse_event_window(message: str, today: date) -> tuple[date, date] | None:
     """Parse the blocked window, not the workout date.
 
@@ -228,6 +243,9 @@ def parse_event_window(message: str, today: date) -> tuple[date, date] | None:
     if "周末" in message:
         return _weekend(message, today)
     window = _next_week_duration(message, today)
+    if window is not None:
+        return window
+    window = _relative_duration(message, today)
     if window is not None:
         return window
 
@@ -335,6 +353,15 @@ def resolve(
             "ready": False,
             "terminal": True,
             "question": "这段时间已经过去了，告诉我接下来哪几天不方便。",
+        }
+    if (end - start).days > 14:
+        return {
+            "ready": False,
+            "terminal": True,
+            "question": (
+                f"这次跨度有 {(end - start).days + 1} 天，逐次顺延会把整个计划推乱。"
+                "建议这段时间先跳过，回来后再重新排；要跳过的话直接说“都跳过”。"
+            ),
         }
 
     days = _plan_days(context)

@@ -384,6 +384,13 @@ struct AgentBatchAction: Codable, Hashable {
     }
 }
 
+/// 一次确认多个习惯提醒；服务端把“喝水和睡觉”拆成 items。
+struct AgentReminderItem: Codable, Hashable {
+    let kind: String
+    let hour: Int?
+    let minute: Int?
+}
+
 struct AgentActionPayload: Codable, Hashable {
     let dayID: String?
     let planID: String?
@@ -441,6 +448,7 @@ struct AgentActionPayload: Codable, Hashable {
     let enabled: Bool?
     let hour: Int?
     let minute: Int?
+    let reminderItems: [AgentReminderItem]?
 
     enum CodingKeys: String, CodingKey {
         case dayID = "day_id"
@@ -495,6 +503,7 @@ struct AgentActionPayload: Codable, Hashable {
         case enabled
         case hour
         case minute
+        case reminderItems = "reminder_items"
     }
 }
 
