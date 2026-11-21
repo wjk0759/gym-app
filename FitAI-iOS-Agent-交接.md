@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`271e67e`（AI 教练 Release 1 + Release 2 + Release 3 readiness/自适应复盘/训练中 co-pilot/按动作进阶（含自重）/主动教练定时；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒和 active_workout 上下文但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **728 passed**、QA **76/76**、Ruff 通过；**N29/N30/N31/N32 已修，N33 仍 P2**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`271e67e`（AI 教练 Release 1 + Release 2 + Release 3 readiness/自适应复盘/训练中 co-pilot/按动作进阶（含自重）/主动教练定时；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒和 active_workout 上下文但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **728 passed**、QA **76/76**、Ruff 通过；**N29/N30/N31/N33/N37 已通过；N32 P2；N34 P1/P2、N35/N36 P2；本轮不部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -35,6 +35,17 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-21 · macOS（3d40b36 Release 2 复测：N29–N36）
+
+- 环境：生产后端 `3d40b36`；iOS 源码 `3d40b36`，真机仍 `7d03219`；账号 `macqa_coach`；真实 3 练计划 + `app_context`。
+- **通过**：N29 上周吃了什么走 `coach.answer`；N30 “持瓶自重深蹲加一组”出 `training.edit_day_exercise` 3→4 组，短名“深蹲”可命中；N31 `why` 不再提胸痛/深蹲换前弓步，`/coach/memories` 44→25；N33 “我有伤病吗”能答档案无伤病。
+- **N32 P2 仍存在**：“第一周每天练什么”只答“本周 3 练，已完成 0 次”，不列每天。
+- **N34 P1/P2 新发现**：规格示例“下周一到周三出差” → `coach.answer` 只给训练建议，无顺延/跳过卡；加“顺延”后正常出 2 个 reschedule 的 batch，“跳过”正常出 2 个 skip 的 batch。
+- **N35 P2 新发现**：“接下来30天都在外地” → `training.preview_next` 回答下一练，没有说明无法排。
+- **N36 P2 新发现**：“每天10点提醒我喝水和睡觉”只生成 hydration，sleep 被丢；单习惯/关闭/无时间追问均正常。
+- iOS：`FitAITests` 144/144、iPhone 17 UI 7/7、SE UI 7/7；clean build/test 通过；习惯提醒真机通知权限/推送未验证。
+- 本轮未部署：iOS 真机仍 `7d03219`；后端仍 `3d40b36`。N34 优先，N32/N35/N36 一起收口。
 
 ### 2026-11-21 · Windows（Release 2：生活事件重排 + 习惯提醒）
 
