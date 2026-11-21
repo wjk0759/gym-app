@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -443,3 +443,16 @@ def test_build_context_respects_budget_with_large_app_context(db, seeded):
     assert context["profile"]["nickname"] == "小林"
     assert context["current_plan"]["days"][0]["exercises"][0]["name_zh"]
     assert context["app_context"]["today_day"]["id"] == "day-1"
+
+
+def test_building_context_does_not_touch_memory_timestamps(db, seeded):
+    memory = db.execute(select(AIMemory)).scalars().first()
+    assert memory is not None
+    before = memory.updated_at
+
+    build_coach_context(db, "user-1")
+    db.commit()
+    db.refresh(memory)
+
+    assert memory.updated_at == before
+    assert memory.last_used_at is None

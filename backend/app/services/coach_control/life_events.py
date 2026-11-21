@@ -20,6 +20,7 @@ from datetime import date, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+from ..coach_context import plan_days_with_dates
 from ..food_text import DIET_TZ
 
 MAX_EVENT_ACTIONS = 5
@@ -365,7 +366,17 @@ def resolve(
             ),
         }
 
-    days = _plan_days(context)
+    # The app snapshot only carries the current week. A trip next week is the
+    # common case, so prefer the full server-side program and fall back to the
+    # client plan only when this user has no server plan.
+    server_days = plan_days_with_dates(
+        db,
+        user_id,
+        plan=plan,
+        start=today,
+        end=end + timedelta(days=MAX_SHIFT_DAYS + 7),
+    )
+    days = server_days if server_days is not None else _plan_days(context)
     affected = [
         day
         for day in days

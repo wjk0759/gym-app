@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db import Base
-from app.models import Profile, User
+from app.models import Profile, Program, ProgramDay, User
 from app.services.coach_control import runtime
 from app.services.coach_control.life_events import resolve
 from app.services.food_text import DIET_TZ
@@ -97,6 +97,111 @@ def test_life_event_skips_when_user_will_not_make_up(db):
     assert {"胸日", "腿日"} == {
         item["payload"]["title"] for item in batch
     }
+
+
+def _server_program(db) -> tuple[Program, list[dict]]:
+    """Seed a 4-week server plan while the client snapshot has week 1 only."""
+    today = datetime.now(DIET_TZ).date()
+    monday = today - timedelta(days=today.weekday())
+    program = Program(
+        id="server-program",
+        user_id="user-1",
+        title="服务端四周计划",
+        goal_type="build_muscle",
+        version=3,
+        status="active",
+        # Mid-week starts move template week 1 to the next Monday; using the
+        # Sunday before this Monday exercises that branch.
+        start_date=monday - timedelta(days=1),
+        weeks=4,
+        generated_by="template",
+    )
+    db.add(program)
+    week_one: list[dict] = []
+    for week in (1, 2):
+        for weekday, title in ((2, "推"), (4, "拉"), (6, "腿")):
+            day_id = f"server-w{week}-d{weekday}"
+            db.add(
+                ProgramDay(
+                    id=day_id,
+                    program_id=program.id,
+                    week_index=week,
+                    weekday=weekday,
+                    title=title,
+                    focus=["chest"] if title == "推" else ["legs"],
+                )
+            )
+            if week == 1:
+                value = monday + timedelta(days=weekday - 1)
+                week_one.append(
+                    {
+                        "id": day_id,
+                        "date": value.isoformat(),
+                        "title": title,
+                        "weekday": weekday,
+                        "week_index": 1,
+                        "completed": False,
+                        "skipped": False,
+                    }
+                )
+    db.commit()
+    return program, week_one
+
+
+def test_life_event_reads_next_week_from_the_server_plan(db):
+    """A client snapshot with only this week must not hide next week's days."""
+    program, week_one = _server_program(db)
+    today = datetime.now(DIET_TZ).date()
+    next_tuesday = (
+        today
+        - timedelta(days=today.weekday())
+        + timedelta(days=8)
+    )
+
+    result = resolve(
+        db,
+        "user-1",
+        "下周一至周三出差",
+        {
+            "plan": {
+                "id": program.id,
+                "version": program.version,
+                "days": week_one,
+            }
+        },
+    )
+
+    assert result["ready"] is True
+    batch = result["payload"]["batch"]
+    assert len(batch) == 1
+    action = batch[0]
+    assert action["capability_id"] == "training.reschedule"
+    assert action["payload"]["title"] == "推"
+    assert action["payload"]["from_date"] == next_tuesday.isoformat()
+    assert action["payload"]["to_date"] > action["payload"]["from_date"]
+
+
+def test_second_week_schedule_reads_server_plan_days(db):
+    program, week_one = _server_program(db)
+    result = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "第二周每天练什么",
+            app_context={
+                "plan": {
+                    "id": program.id,
+                    "version": program.version,
+                    "days": week_one,
+                }
+            },
+        )
+    )
+
+    assert result["intent"] == "training.week_schedule"
+    assert "推" in result["reply"]
+    assert "腿" in result["reply"]
+    assert "没有安排训练" not in result["reply"]
 
 
 def test_life_event_without_training_word_still_builds_a_card(db):

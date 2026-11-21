@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
+from ...coach_context import plan_days_with_dates
 from ..registry import Capability, register
 
 CAPABILITY = register(
@@ -72,11 +73,19 @@ def resolve(db: Session, user_id: str, message: str, context: dict) -> dict:
                 "actions": [],
             },
         }
+    # The client snapshot usually has the current week only. Use the full
+    # server-side template when it exists so "第二周" and "下周" work too.
+    server_days = plan_days_with_dates(
+        db,
+        user_id,
+        plan=plan if isinstance(plan, dict) else None,
+    )
+    candidate_days = server_days if server_days is not None else days
     today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
     plan_week = _plan_week_index(message)
     if plan_week is not None:
         chosen = []
-        for item in days:
+        for item in candidate_days:
             if not isinstance(item, dict):
                 continue
             if int(item.get("week_index") or 0) != plan_week:
@@ -96,7 +105,7 @@ def resolve(db: Session, user_id: str, message: str, context: dict) -> dict:
         start = _week_start(message, today)
         end = start + timedelta(days=6)
         chosen = []
-        for item in days:
+        for item in candidate_days:
             if not isinstance(item, dict):
                 continue
             raw = str(item.get("date") or "")

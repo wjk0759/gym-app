@@ -230,12 +230,10 @@ def _current_week_index(program: Program, today: date) -> int:
 
 
 def _memory_items(db: Session, user_id: str, limit: int = 20) -> list[dict]:
+    # Keep context building read-only. Updating last_used_at here used to bump
+    # the ORM's updated_at on every turn, which made old memories look fresh
+    # and made the memory list reorder after unrelated questions.
     memories = list_memories(db, user_id, limit)
-    if memories:
-        used_at = utcnow()
-        for item in memories:
-            item.last_used_at = used_at
-        db.flush()
     return [
         {
             "kind": item.kind,
@@ -521,6 +519,106 @@ def _plan_exercise_context(item, performance: dict | None = None) -> dict:
             if key in performance:
                 payload[key] = performance[key]
     return payload
+
+
+def plan_days_with_dates(
+    db: Session,
+    user_id: str,
+    *,
+    plan: dict | None = None,
+    start: date | None = None,
+    end: date | None = None,
+) -> list[dict] | None:
+    """Return every server-side plan day with a concrete date.
+
+    ``current_plan_context`` deliberately carries only the current week so the
+    mobile payload stays small. Life events and "next week" questions need the
+    rest of the program, so they resolve dates from the program template here.
+
+    ``None`` means this user has no matching server-side program; callers may
+    then fall back to a client plan snapshot. An empty list means a program
+    exists but has no day in the requested window.
+    """
+    plan_id = str((plan or {}).get("id") or "")
+    if plan_id:
+        program = db.execute(
+            select(Program).where(
+                Program.id == plan_id,
+                Program.user_id == user_id,
+            )
+        ).scalar_one_or_none()
+    else:
+        program = active_program(db, user_id)
+    if program is None or program.start_date is None:
+        return None
+
+    days = list(program.days)
+    if not days:
+        return []
+    day_ids = [day.id for day in days]
+    states = {
+        str(item.day_id).lower(): item
+        for item in db.execute(
+            select(PlanDayState).where(
+                PlanDayState.user_id == user_id,
+                PlanDayState.plan_id == program.id,
+                PlanDayState.day_id.in_(day_ids),
+            )
+        )
+        .scalars()
+        .all()
+    }
+    # A finished workout session is the only reliable completion signal; the
+    # day-state row only stores reschedules and skips.
+    completed_ids = {
+        str(value)
+        for value in db.execute(
+            select(WorkoutSession.program_day_id).where(
+                WorkoutSession.user_id == user_id,
+                WorkoutSession.program_day_id.in_(day_ids),
+                WorkoutSession.finished_at.is_not(None),
+            )
+        )
+        .scalars()
+        .all()
+        if value
+    }
+
+    start_week = program.start_date - timedelta(
+        days=program.start_date.weekday()
+    )
+    # A plan generated mid-week starts its first template week on the next
+    # Monday, matching what the app shows and what with_plan_context does.
+    if start_week < program.start_date:
+        start_week += timedelta(days=7)
+
+    result: list[dict] = []
+    for day in days:
+        state = states.get(str(day.id).lower())
+        assigned = state.assigned_date if state is not None else None
+        computed = start_week + timedelta(
+            days=(int(day.week_index or 1) - 1) * 7
+            + (int(day.weekday or 1) - 1)
+        )
+        when = assigned or computed
+        if start is not None and when < start:
+            continue
+        if end is not None and when > end:
+            continue
+        result.append(
+            {
+                "id": day.id,
+                "date": when.isoformat(),
+                "week_index": day.week_index,
+                "weekday": day.weekday,
+                "title": day.title,
+                "focus": day.focus or [],
+                "completed": str(day.id) in completed_ids,
+                "skipped": bool(state is not None and state.skipped_at),
+            }
+        )
+    result.sort(key=lambda item: (item["date"], item["title"] or ""))
+    return result
 
 
 def current_plan_context(

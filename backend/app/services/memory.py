@@ -352,6 +352,11 @@ async def extract_and_store(
     """
     if settings.use_mock_llm:
         return []
+    # Punctuation-only or emoji-only turns carry no durable fact. Without this
+    # guard the model sometimes echoes the example in the prompt ("每周二四六
+    # 训练") when the user sends only "？？？？？？？？".
+    if len(re.sub(r"[\s\W_]+", "", user_message)) < 4:
+        return []
     try:
         # Memory extraction must not pin a DB transaction during its LLM call.
         db.commit()

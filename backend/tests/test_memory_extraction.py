@@ -38,3 +38,28 @@ def test_memory_extraction_never_sends_the_assistant_reply(monkeypatch):
     assert captured["payload"] == {"user_message": "我想用杠铃卧推"}
     assert "assistant_reply" not in captured["payload"]
     assert "不要从教练" in captured["system_prompt"]
+
+
+def test_punctuation_only_turn_does_not_call_the_memory_model(monkeypatch):
+    called = False
+
+    async def fake_complete_json(system_prompt, payload, **kwargs):
+        nonlocal called
+        called = True
+        return {"memories": []}
+
+    monkeypatch.setattr(memory, "settings", SimpleNamespace(use_mock_llm=False))
+    monkeypatch.setattr(memory.llm, "complete_json", fake_complete_json)
+    db = SimpleNamespace(commit=lambda: None)
+
+    result = asyncio.run(
+        memory.extract_and_store(
+            db,
+            "user-1",
+            "？？？？？？？？",
+            "",
+        )
+    )
+
+    assert result == []
+    assert called is False

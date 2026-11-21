@@ -1178,7 +1178,10 @@ def _looks_like_week_schedule(message: str) -> bool:
     ):
         return False
     return bool(
-        re.search(r"下周|本周|这周|一周|上周", message)
+        re.search(
+            r"第\s*[一二三四五六七八\d]\s*周|下周|本周|这周|一周|上周",
+            message,
+        )
         and re.search(r"练什么|训练安排|计划|日程|安排", message)
     )
 
