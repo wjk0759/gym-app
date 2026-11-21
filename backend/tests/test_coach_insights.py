@@ -10,6 +10,8 @@ from sqlalchemy.pool import StaticPool
 
 from app.db import Base
 from app.models import (
+    EquipmentType,
+    EquipmentTypeExercise,
     Exercise,
     FoodLog,
     PlanExercise,
@@ -22,6 +24,7 @@ from app.models import (
 )
 from app.services.coach_control.capabilities import coach_answer
 from app.services.coach_control.insights import _window_for, build_readonly_context
+from app.services.coach_control.runtime import handle_turn
 
 
 @pytest.fixture()
@@ -70,6 +73,7 @@ def seeded(db):
             name_zh="深蹲",
             muscle_group="legs",
             equipment="barbell",
+            instructions="保持背部挺直，膝盖对齐脚尖。",
         )
     )
     program = Program(
@@ -244,6 +248,63 @@ def test_last_week_is_a_calendar_window():
     assert window.label == "上周"
     assert window.end.weekday() == 0
     assert (window.end - window.start).days == 7
+
+
+def test_exercise_explanation_uses_catalogue(db, seeded):
+    context = build_readonly_context(
+        db,
+        "user-1",
+        "深蹲怎么做",
+        seeded,
+    )
+
+    assert context is not None
+    assert "动作：深蹲" in context
+    assert "主要部位：腿" in context
+    assert "动作要点：保持背部挺直" in context
+
+
+def test_equipment_guidance_lists_common_exercises(db, seeded):
+    db.add(
+        EquipmentType(
+            slug="seated_row",
+            name_zh="坐姿划船机",
+            name_en="seated row",
+            category="machine",
+            exercise_group="back",
+            aliases=["坐姿划船"],
+            is_active=True,
+        )
+    )
+    db.add(
+        EquipmentTypeExercise(
+            equipment_type_slug="seated_row",
+            exercise_slug="squat",
+            is_primary=True,
+        )
+    )
+    db.commit()
+
+    context = build_readonly_context(
+        db,
+        "user-1",
+        "坐姿划船机怎么用",
+        seeded,
+    )
+
+    assert context is not None
+    assert "器械：坐姿划船机" in context
+    assert "常见动作：深蹲" in context
+    assert "座椅" in context
+
+
+def test_exercise_form_question_is_not_meal_detail(db, seeded):
+    result = asyncio.run(
+        handle_turn(db, "user-1", "深蹲怎么做")
+    )
+
+    assert result["intent"] == "coach.answer"
+    assert result["pending"] is None
 
 
 def test_coach_answer_injects_ledger_facts(db, seeded, monkeypatch):

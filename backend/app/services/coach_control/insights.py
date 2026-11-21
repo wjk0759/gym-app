@@ -21,6 +21,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ...models import (
+    EquipmentType,
+    EquipmentTypeExercise,
     Exercise,
     FoodLog,
     Profile,
@@ -399,6 +401,106 @@ def _progression_summary(
     return format_progression_facts(plan)
 
 
+MUSCLE_LABELS = {
+    "chest": "胸",
+    "back": "背",
+    "legs": "腿",
+    "glutes": "臀",
+    "shoulders": "肩",
+    "arms": "手臂",
+    "core": "核心",
+    "cardio": "有氧",
+    "full_body": "全身",
+}
+
+
+def _exercise_summary(db: Session, message: str) -> str | None:
+    """Explain one exercise from the catalogue, never from the user's body."""
+    match = _matching_exercise(db, message)
+    if match is None:
+        return None
+    slug, _ = match
+    exercise = db.get(Exercise, slug)
+    if exercise is None:
+        return None
+    parts = [f"动作：{exercise.name_zh}"]
+    if exercise.name_en:
+        parts.append(f"英文：{exercise.name_en}")
+    parts.append(
+        "主要部位："
+        + MUSCLE_LABELS.get(exercise.muscle_group, exercise.muscle_group)
+    )
+    parts.append(
+        "器械："
+        + EQUIPMENT_LABELS.get(exercise.equipment, exercise.equipment)
+    )
+    if exercise.is_compound:
+        parts.append("复合动作")
+    if exercise.instructions:
+        instructions = re.sub(r"\s+", " ", exercise.instructions).strip()
+        if instructions:
+            parts.append("动作要点：" + instructions[:500])
+    if exercise.contraindications:
+        parts.append(
+            "动作禁忌标签："
+            + "、".join(str(item) for item in exercise.contraindications[:5])
+            + "（只是动作标签，不代表用户有这些伤病）"
+        )
+    return "；".join(parts)
+
+
+def _matching_equipment(db: Session, message: str) -> EquipmentType | None:
+    rows = (
+        db.execute(
+            select(EquipmentType).where(EquipmentType.is_active.is_(True))
+        )
+        .scalars()
+        .all()
+    )
+    text = message.lower()
+    matches: list[tuple[int, EquipmentType]] = []
+    for item in rows:
+        names = [item.name_zh, item.name_en or ""]
+        names.extend(str(alias) for alias in (item.aliases or []))
+        for name in names:
+            value = name.strip().lower()
+            if value and value in text:
+                matches.append((len(value), item))
+    if not matches:
+        return None
+    return max(matches, key=lambda item: item[0])[1]
+
+
+def _equipment_guidance_summary(db: Session, message: str) -> str | None:
+    """Name a machine and its common exercises, plus a safe setup checklist."""
+    equipment = _matching_equipment(db, message)
+    if equipment is None:
+        return None
+    names = (
+        db.execute(
+            select(Exercise.name_zh)
+            .join(
+                EquipmentTypeExercise,
+                EquipmentTypeExercise.exercise_slug == Exercise.slug,
+            )
+            .where(
+                EquipmentTypeExercise.equipment_type_slug == equipment.slug
+            )
+            .limit(4)
+        )
+        .scalars()
+        .all()
+    )
+    lines = [f"器械：{equipment.name_zh}（{equipment.category}）"]
+    if names:
+        lines.append("常见动作：" + "、".join(names))
+    lines.append(
+        "使用前先把座椅/把手调到肩或胸同高，先用轻重量试一组；"
+        "动作中不要憋气，出现疼痛或卡住就停。"
+    )
+    return "；".join(lines)
+
+
 def build_readonly_context(
     db: Session,
     user_id: str,
@@ -476,6 +578,45 @@ def build_readonly_context(
         )
     ):
         sections.append(_progression_summary(db, user_id, program))
+    if any(
+        word in text
+        for word in (
+            "怎么做",
+            "动作要点",
+            "练哪里",
+            "练哪",
+            "这个动作",
+            "动作解释",
+            "什么动作",
+            "替代动作",
+            "动作细节",
+            "主要练",
+            "有什么作用",
+        )
+    ):
+        summary = _exercise_summary(db, text)
+        if summary:
+            sections.append(summary)
+    if any(
+        word in text
+        for word in (
+            "器械",
+            "机器",
+            "怎么用",
+            "怎么调",
+            "座椅",
+            "座位",
+            "史密斯",
+            "龙门架",
+            "蝴蝶机",
+            "腿举机",
+            "划船机",
+            "坐姿推胸",
+        )
+    ):
+        summary = _equipment_guidance_summary(db, text)
+        if summary:
+            sections.append(summary)
     if any(word in text for word in ("计划", "安排", "为什么", "分化", "频率", "训练日")):
         sections.append(_plan_summary(program))
 

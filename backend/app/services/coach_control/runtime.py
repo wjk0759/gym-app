@@ -1067,6 +1067,24 @@ def _looks_like_diet_plan(message: str) -> bool:
     )
 
 
+def _looks_like_exercise_explanation(message: str) -> bool:
+    """Exercise form questions must not fall into the recipe/meal-detail path."""
+    if not re.search(
+        r"卧推|深蹲|硬拉|划船|推举|飞鸟|弯举|下压|引体|臂屈伸|"
+        r"腿举|推胸|蝴蝶机|夹胸|侧平举|后束|卷腹|臀桥|箭步蹲|"
+        r"腿弯举|腿屈伸|这个动作",
+        message,
+    ):
+        return False
+    return bool(
+        re.search(
+            r"怎么做|动作要点|练哪里|练哪|动作解释|替代动作|动作细节|"
+            r"主要练|有什么作用|怎么用",
+            message,
+        )
+    )
+
+
 def _looks_like_meal_detail(message: str) -> bool:
     if re.search(
         r"吃了|喝了|记录|记一下|安排|生成|排一下|计划|改成|换成|删除|改期",
@@ -3798,6 +3816,8 @@ async def handle_turn(
 
     if intent_override is None and _looks_like_onboarding(text):
         intent_override = ONBOARD
+    if intent_override is None and _looks_like_exercise_explanation(text):
+        intent_override = "coach.answer"
     if intent_override is None and _looks_like_life_event(text):
         intent_override = LIFE_EVENT
     if intent_override is None and _looks_like_progression_apply(text):

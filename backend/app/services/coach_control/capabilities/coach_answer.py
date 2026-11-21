@@ -99,6 +99,15 @@ async def resolve(
             feeling = active.get("feeling")
             if isinstance(feeling, int) and feeling <= 2:
                 lines.append("主观感受偏低：先降 1 组或降 5%，不要硬顶。")
+            slug = str(active.get("current_slug") or "").strip()
+            if slug:
+                from ....models import Exercise
+
+                exercise = db.get(Exercise, slug)
+                if exercise is not None and exercise.instructions:
+                    cue = " ".join(str(exercise.instructions).split())
+                    if cue:
+                        lines.append("动作要点：" + cue[:400])
             context_parts.append(
                 "当前训练（客户端实时状态，只能据此回答，不要编造未给出的组数）：\n"
                 + "\n".join(lines)

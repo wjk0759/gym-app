@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db import Base
-from app.models import Profile, User
+from app.models import Exercise, Profile, User
 from app.services.coach_control import runtime
 from app.services.coach_control.capabilities import coach_answer
 
@@ -28,6 +28,15 @@ def db():
     )()
     session.add(User(id="user-1"))
     session.add(Profile(user_id="user-1", nickname="小林"))
+    session.add(
+        Exercise(
+            slug="bench_press",
+            name_zh="杠铃卧推",
+            muscle_group="chest",
+            equipment="barbell",
+            instructions="肩胛后收，杠铃触胸后推起。",
+        )
+    )
     session.commit()
     try:
         yield session
@@ -80,6 +89,7 @@ def test_coach_answer_injects_active_workout(db, monkeypatch):
     assert "80 kg" in context
     assert "RPE 9" in context
     assert "不要建议加重量" in context
+    assert "动作要点：肩胛后收" in context
 
 
 def test_next_set_question_stays_read_only(db):
