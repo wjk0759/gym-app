@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`1595c36`（AI 教练 Release 1 只读问答 + 日历窗口/反编造伤病修复；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码仍 `7d03219`，Mac 已跑 `FitAITests` **144/144**、UI **7/7**，iOS `7d03219` 已装 Wu-Tang；`/health/ready` **200**；Flyway **V44**；后端 **687 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`39cca40`（AI 教练 Release 1 只读问答 + 日历/反编造伤病 + 完整 `/coach/turns` 路由与记忆修复；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码仍 `7d03219`，Mac 已跑 `FitAITests` **144/144**、UI **7/7**，iOS `7d03219` 已装 Wu-Tang；`/health/ready` **200**；Flyway **V44**；后端 **691 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -35,6 +35,43 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-21 · Windows（完整 `/coach/turns` 冒烟：路由、额度、记忆）
+
+- 提交：`39cca40`，已推 `develop`；生产 API 已重建，`/health/ready` 200。
+- 测试账号：
+  - `test_reviewer`（`45941ae8-...`，Pro 到 2027-02）跑 Pro 链路。
+  - 免费测试账号 `13900000015`（`d80ad25a-...`）跑额度；测试后已清 `feature_usage`。
+- 冒烟结果（`/coach/turns`，不是直接调 service）：
+  - “我上周练了几次 / 今天周几 / 最近饮食怎么样 / 为什么这样安排计划 / 我还缺什么档案”全部 `coach.answer`。
+  - 延迟：读问答 **0.9–4.3s**；`body.log_weight` 确认卡 **63–90ms**。
+  - “今天周几”回答正确（周六）；之前曾答“今天周二”。
+  - “最近饮食怎么样”按最近 7 天事实回答，不再只复盘今天。
+  - “为什么这样安排计划”不再生成新计划；之前会触发 `training.generate_plan`，耗时 32.7s 并生成待确认草稿。
+  - 体重写入只生成 `body.log_weight` 待确认卡；调用 `/coach/pending/{id}/cancel` 成功，没有写 `body_metrics`。
+  - 免费账号：第 1/2/3 条后 `used` 依次 1/2/3，第 4 条返回 **429 COACH_QUOTA_EXHAUSTED**；Pro 账号额度 `used=0` 不变。
+- 冒烟发现并修复：
+  - **问“为什么这样安排计划”会生成新计划**：`_looks_like_plan` 命中“安排计划”里的“排计划”。现在解释类词（为什么/怎么/如何/解释/原因）直接排除。
+  - **“最近饮食怎么样”只复盘今天**：`_looks_like_diet_review` 抢走宽窗口问题。现在“最近/上周/上个月/本月/几天/趋势”交给 `coach.answer` 的 7 天事实。
+  - **模型猜星期几**：`context_as_text` 增加“今天：日期（周X）”，不再从训练日猜。
+  - **记忆污染**：记忆提取把模型自己编的“你之前提过想用杠铃卧推”写进长期记忆，下一轮又当真实历史引用。现在 `extract_and_store` 只发送 `user_message`，不发送 `assistant_reply`；提示词明确“教练回复不是事实来源”。
+  - **零摄入文案**：今日饮食 0 kcal 时不再写“剩余 2578 kcal”，改为“还没有记录，目标 X kcal”。
+- 清理：
+  - 已取消冒烟产生的待确认计划卡和饮食复盘卡，丢弃待确认草稿计划。
+  - 已删除 2 条被助手回复污染的记忆；修复后复跑没有新增记忆。
+  - 已删除冒烟用临时 AuthSession，重置免费测试账号额度。
+- 未验证：
+  - 没有在真实用户 `13428104171` 上跑写操作确认链路；写操作只用 test_reviewer 的体重卡验证到“待确认 + 取消”，未点确认。
+  - 记忆抽取是异步任务；只验证了“不新增污染记忆”，没有做长期记忆质量 eval。
+  - iOS 无代码改动。
+- 下一步：
+  - Release 1 收口：对话式建档 slot-filling（复用 `profile.update` / `body.log_weight` / `profile.update_goal` / `profile.update_equipment`）。
+  - 然后 Release 2：生活事件重排 + 提醒/习惯。
+- 禁止恢复：
+  - 不要让“为什么/怎么/解释计划”进入计划生成；不要用 `diet.review_day` 接“最近/上周饮食”这类宽窗口问题。
+  - 不要把 `assistant_reply` 发给记忆提取器；模型自己的话不能变成用户长期记忆。
+  - 不要在上下文里省掉今天的日期/星期。
+- 仍 BLOCKED：真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
 
 ### 2026-11-21 · Windows（只读冒烟修复：日历窗口 + 反编造伤病）
 
