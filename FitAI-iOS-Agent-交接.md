@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`22adfbc`（AI 教练 Release 1 + Release 2 + Release 3 readiness/自适应复盘/训练中 co-pilot/按动作进阶/主动教练定时；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒和 active_workout 上下文但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **726 passed**、QA **76/76**、Ruff 通过；**N29/N30/N31/N32 已修，N33 仍 P2**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`271e67e`（AI 教练 Release 1 + Release 2 + Release 3 readiness/自适应复盘/训练中 co-pilot/按动作进阶（含自重）/主动教练定时；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒和 active_workout 上下文但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **728 passed**、QA **76/76**、Ruff 通过；**N29/N30/N31/N32 已修，N33 仍 P2**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -69,6 +69,26 @@
   - 不要把习惯提醒标识改成 `workout-*`；不要用关闭训练提醒去删 `habit-*`。
   - 不要声称习惯提醒跨设备同步。
 - 仍 BLOCKED：iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
+
+### 2026-11-21 · Windows（Release 3：自重动作进阶）
+
+- 提交：`271e67e`，已推 `develop`；生产 API 已重建，`/health/ready` 200。
+- `progression.py` 扩展：
+  - 自重 + `training_type_code=strength` 的动作进入进阶。
+  - 次数到区间上沿且 RPE ≤8 → 上沿 +2 次（如 12-15 → 12-17）。
+  - RPE ≥9 或次数低于下沿 → 先减 1 组；只有 1 组时才降次数下沿。
+  - 拉伸、瑜伽、普拉提、有氧、灵活性仍不进入进阶，避免复盘被刷屏。
+- 展示：
+  - 周复盘 action 预览不再假设所有动作都有重量，支持“12→17 次”“3→2 组”。
+  - 确认卡继续复用 `training.edit_day_exercise`，写入 reps/sets，整组可撤销。
+- 验证：后端 **728 passed**、QA **76/76**、Ruff 通过；新增 2 个自重测试（加次数、减组数）。
+- 未验证：
+  - 自重进阶还没有用真实高训练量账号跑完整确认链路。
+  - 自重动作按“动作难度升级”（如深蹲→手枪深蹲）还没做，只做次数/组数。
+- 下一步：
+  - Release 3 收尾：训练页内嵌 co-pilot 浮层；APNs/Notifications V2 仍 BLOCKED。
+  - Mac 构建 + 真机验证。
+- 仍 BLOCKED：APNs、N33 话术、iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
 
 ### 2026-11-21 · Windows（Release 3：主动教练定时调度）
 
