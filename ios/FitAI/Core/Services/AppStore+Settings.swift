@@ -55,6 +55,14 @@ extension AppStore {
         persist()
     }
 
+    /// Account-level opt-out for in-app proactive coach nudges. This does not
+    /// touch local notification permission or the daily cron.
+    func setProactiveCoachEnabled(_ enabled: Bool) {
+        proactiveCoachEnabled = enabled
+        persist()
+        markPreferencesDirty()
+    }
+
     /// Reconcile the account-level reminder intent with this device's
     /// notification permission and current plan. Called after cloud sync and
     /// when opening settings, so a device that never granted permission cannot

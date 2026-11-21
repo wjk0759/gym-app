@@ -288,6 +288,7 @@ class PreferencesIn(BaseModel):
     reminder_hour: int | None = Field(default=None, ge=0, le=23)
     reminder_minute: int | None = Field(default=None, ge=0, le=59)
     notifications_enabled: bool | None = None
+    proactive_enabled: bool | None = None
     body_checkin_frequency: str | None = Field(default=None, max_length=20)
     body_checkin_weekday: int | None = Field(default=None, ge=1, le=7)
     body_checkin_day: int | None = Field(default=None, ge=1, le=28)

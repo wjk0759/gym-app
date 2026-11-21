@@ -53,6 +53,7 @@ struct SettingsView: View {
 
                 sectionLabel("训练设置")
                 reminderCard
+                proactiveCoachCard
                 restTimerCard
                 bodyCheckInCard
                 healthCard

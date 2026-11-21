@@ -199,6 +199,9 @@ final class AppStore {
     var reminderMinute = 0
     /// Cloud-synced user intent: reminders should be on for this account.
     var remindersEnabled = false
+    /// Cloud-synced intent for in-app proactive coach nudges. This is separate
+    /// from local notification permission and system push.
+    var proactiveCoachEnabled = true
     /// Device-effective state: intent is on and this device granted permission.
     /// Never push this to the server; it differs per device.
     var notificationsEnabled = false
@@ -294,6 +297,7 @@ final class AppStore {
         preferencesDirty = false
         cycleDirty = false
         remindersEnabled = false
+        proactiveCoachEnabled = true
         notificationsEnabled = false
         restLiveActivityEnabled = true
         restNotificationsEnabled = true
@@ -435,6 +439,7 @@ final class AppStore {
         reminderHour = state.reminderHour
         reminderMinute = state.reminderMinute
         remindersEnabled = state.remindersEnabled ?? state.notificationsEnabled
+        proactiveCoachEnabled = state.proactiveCoachEnabled ?? true
         notificationsEnabled = state.notificationsEnabled
         restLiveActivityEnabled = state.restLiveActivityEnabled ?? true
         restNotificationsEnabled = state.restNotificationsEnabled ?? true
@@ -504,6 +509,7 @@ final class AppStore {
             reminderHour: reminderHour,
             reminderMinute: reminderMinute,
             remindersEnabled: remindersEnabled,
+            proactiveCoachEnabled: proactiveCoachEnabled,
             notificationsEnabled: notificationsEnabled,
             restLiveActivityEnabled: restLiveActivityEnabled,
             restNotificationsEnabled: restNotificationsEnabled,
@@ -633,6 +639,7 @@ final class AppStore {
         var reminderHour: Int
         var reminderMinute: Int
         var remindersEnabled: Bool?
+        var proactiveCoachEnabled: Bool?
         var notificationsEnabled: Bool
         var restLiveActivityEnabled: Bool?
         var restNotificationsEnabled: Bool?

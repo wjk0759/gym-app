@@ -1385,6 +1385,9 @@ class UserPreference(Base):
     reminder_hour: Mapped[int] = mapped_column(Integer, default=19)
     reminder_minute: Mapped[int] = mapped_column(Integer, default=0)
     notifications_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    # 应用内主动教练提醒；关闭后每日扫描仍运行，但不会给该用户创建
+    # 漏练/恢复收件箱项。它和本地通知权限无关。
+    proactive_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     body_checkin_frequency: Mapped[str] = mapped_column(String(20), default="off")
     body_checkin_weekday: Mapped[int] = mapped_column(Integer, default=1)
     body_checkin_day: Mapped[int] = mapped_column(Integer, default=1)

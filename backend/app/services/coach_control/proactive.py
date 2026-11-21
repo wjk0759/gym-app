@@ -28,6 +28,7 @@ from ...models import (
     Profile,
     Program,
     User,
+    UserPreference,
     WorkoutSession,
     utcnow,
 )
@@ -227,6 +228,10 @@ def run(
         if locked is None:
             continue
         if db.get(Profile, user.id) is None:
+            db.commit()
+            continue
+        preference = db.get(UserPreference, user.id)
+        if preference is not None and not preference.proactive_enabled:
             db.commit()
             continue
         try:

@@ -103,6 +103,7 @@ struct RemoteCloudPreferences: Codable, Equatable {
     let reminderHour: Int?
     let reminderMinute: Int?
     let notificationsEnabled: Bool?
+    let proactiveEnabled: Bool?
     let bodyCheckinFrequency: String?
     let bodyCheckinWeekday: Int?
     let bodyCheckinDay: Int?
@@ -114,6 +115,7 @@ struct RemoteCloudPreferences: Codable, Equatable {
         case reminderHour = "reminder_hour"
         case reminderMinute = "reminder_minute"
         case notificationsEnabled = "notifications_enabled"
+        case proactiveEnabled = "proactive_enabled"
         case bodyCheckinFrequency = "body_checkin_frequency"
         case bodyCheckinWeekday = "body_checkin_weekday"
         case bodyCheckinDay = "body_checkin_day"

@@ -17,6 +17,7 @@ from app.models import (
     ProgramDay,
     SetLog,
     User,
+    UserPreference,
     WorkoutSession,
 )
 from app.services.coach_control.proactive import run
@@ -139,6 +140,18 @@ def test_proactive_deduplicates_missed_training(db):
 
     assert first["created"] == 1
     assert second["created"] == 0
+
+
+def test_proactive_respects_user_opt_out(db):
+    now = datetime(2026, 11, 21, 9, tzinfo=TZ)
+    _add_program(db, weekday=5)
+    db.add(UserPreference(user_id="user-1", proactive_enabled=False))
+    db.commit()
+
+    result = run(db, now=now)
+
+    assert result["created"] == 0
+    assert db.execute(select(CoachInbox)).scalars().all() == []
 
 
 def test_proactive_endpoint_rejects_missing_or_wrong_token(db, monkeypatch):

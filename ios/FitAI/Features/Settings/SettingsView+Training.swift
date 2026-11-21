@@ -48,6 +48,41 @@ extension SettingsView {
         .card()
     }
 
+    var proactiveCoachCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("教练主动提醒")
+                        .font(AppType.headline)
+                    Text("漏练、恢复压力会出现在教练动态")
+                        .font(AppType.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+                Spacer()
+                Image(systemName: store.proactiveCoachEnabled
+                    ? "sparkles"
+                    : "sparkles.slash")
+                    .foregroundStyle(
+                        store.proactiveCoachEnabled
+                            ? Theme.cobalt
+                            : Theme.tertiaryText
+                    )
+            }
+            Toggle(
+                "允许教练主动提醒我",
+                isOn: Binding(
+                    get: { store.proactiveCoachEnabled },
+                    set: { store.setProactiveCoachEnabled($0) }
+                )
+            )
+            .font(AppType.callout)
+            Text("只影响应用内“教练动态”，不是系统推送；随时可以关掉。")
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundStyle(Theme.tertiaryText)
+        }
+        .card()
+    }
+
     var weatherCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {

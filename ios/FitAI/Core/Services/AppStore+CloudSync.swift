@@ -71,6 +71,9 @@ extension AppStore {
                 // this particular device can post notifications.
                 remindersEnabled = value
             }
+            if let value = preferences.proactiveEnabled {
+                proactiveCoachEnabled = value
+            }
             if let raw = preferences.bodyCheckinFrequency,
                let frequency = BodyCheckInFrequency(rawValue: raw) {
                 bodyCheckInFrequency = frequency
@@ -232,6 +235,7 @@ extension AppStore {
                 "reminder_hour": reminderHour,
                 "reminder_minute": reminderMinute,
                 "notifications_enabled": remindersEnabled,
+                "proactive_enabled": proactiveCoachEnabled,
                 "body_checkin_frequency": bodyCheckInFrequency.rawValue,
                 "body_checkin_weekday": bodyCheckInWeekday,
                 "body_checkin_day": bodyCheckInDay,
