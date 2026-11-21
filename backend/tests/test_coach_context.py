@@ -295,7 +295,30 @@ def test_context_contains_memories_equipment_and_app_context(db, seeded):
     assert context["app_context"] == app_context
     assert context["memories"][0]["key"] == "weekly_schedule"
     assert context["equipment_library"][0]["name"] == "可调哑铃"
-    assert "每周二、四、六" in context_as_text(context)
+    text = context_as_text(context)
+    assert "每周二、四、六" in text
+    # The model used to guess the weekday; the prompt now states it.
+    assert f"今天：{context['today']['date']}（周" in text
+
+
+def test_context_as_text_does_not_report_zero_intake_as_remaining():
+    text = context_as_text(
+        {
+            "profile": {},
+            "goal": {},
+            "nutrition_7d": {},
+            "today_nutrition": {
+                "logged": {"kcal": 0},
+                "targets": {"kcal": 2500},
+                "remaining": {"kcal": 2500},
+                "logged_plan_meals": [],
+                "plan_meals": [],
+            },
+        }
+    )
+
+    assert "今日饮食：还没有记录，目标 2500 kcal" in text
+    assert "剩余" not in text
 
 
 def test_context_without_profile_is_honest(db):

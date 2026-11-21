@@ -6366,6 +6366,22 @@ def test_diet_review_does_not_swallow_photo_questions():
     assert runtime._looks_like_diet_review("今天饮食还缺什么")
 
 
+def test_recent_diet_question_is_not_a_single_day_review():
+    # "最近饮食怎么样" should use the 7-day fact block in coach.answer, not
+    # build a today-only diet.review_day card.
+    assert not runtime._looks_like_diet_review("最近饮食怎么样？")
+    assert not runtime._looks_like_diet_review("上周吃得怎么样")
+    assert runtime._looks_like_diet_review("今天饮食还缺什么")
+
+
+def test_plan_explanation_is_not_plan_generation():
+    # The deterministic matcher sees "排计划" inside "安排计划"; an explanation
+    # question must not generate a new draft plan.
+    assert not runtime._looks_like_plan("为什么这样安排计划？")
+    assert not runtime._looks_like_plan("这个计划是怎么安排的")
+    assert runtime._looks_like_plan("给我生成一个4周计划")
+
+
 def test_kg_is_not_a_food_unit():
     assert runtime._looks_like_food("记错了 今天是74kg") is False
     assert runtime._looks_like_weight("记错了 体重是74kg") is True

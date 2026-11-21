@@ -648,6 +648,11 @@ def _looks_like_action_request(message: str) -> bool:
 
 
 def _looks_like_plan(message: str) -> bool:
+    # "为什么这样安排计划" contains "排计划" but is a request to explain the
+    # current plan, not to generate a new one. Generating a draft here is both
+    # slow and surprising, so explanation words always win.
+    if re.search(r"为什么|为啥|怎么|如何|解释|讲讲|原因|依据|凭什么", message):
+        return False
     return bool(
         re.search(
             r"生成.{0,6}计划|重新.{0,4}计划|重排.{0,4}计划|排.{0,4}计划|"
@@ -1008,6 +1013,10 @@ def _looks_like_meal_detail(message: str) -> bool:
 
 def _looks_like_diet_review(message: str) -> bool:
     if re.search(r"本周|这周|一周|周报", message):
+        return False
+    # Broad windows are answered by coach.answer with the 7-day fact block.
+    # diet.review_day only owns today/yesterday-style single-day reviews.
+    if re.search(r"最近|上周|上个月|本月|这个月|几天|趋势|一直", message):
         return False
     if re.search(r"图片|照片|刚才|刚刚|上面|这张|那张|这道菜|这个菜", message):
         return False

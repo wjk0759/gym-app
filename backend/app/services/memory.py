@@ -53,12 +53,13 @@ SESSION_SUMMARY_PROMPT_VERSION = prompt_version(
 logger = logging.getLogger(__name__)
 
 MEMORY_PROMPT = """你是「叫练」的记忆整理器。
-从用户和教练的一轮对话中提取“未来会影响训练安排或教练回答”的稳定事实。
+只从用户的这一条消息里提取“未来会影响训练安排或教练回答”的稳定事实。
+教练的回复不是事实来源：不要从教练的复述、建议、提问或推测里提取任何内容。
 只输出 JSON，不要 Markdown：
 {"memories":[{"kind":"schedule","key":"weekly_schedule","content":"用户每周二、四、六训练，每次 30 分钟","confidence":0.95}]}
 
 规则：
-1. 只记录稳定偏好、约束、日程、器械、伤病、目标或行为习惯；不要记录一次性问题、寒暄、系统提示或助手猜测。
+1. 只记录用户明确说过的稳定偏好、约束、日程、器械、伤病、目标或行为习惯；不要记录一次性问题、寒暄、系统提示或助手猜测。
 2. content 用一句中文概括，最多 120 字；不要包含密码、手机号、地址或其他密钥。
 3. 没有值得长期记住的事实就返回 {"memories":[]}。
 4. 最多 3 条；confidence 范围 0–1，低于 0.6 不要返回。
@@ -342,7 +343,13 @@ async def extract_and_store(
     *,
     source: str = "agent",
 ) -> list[AIMemory]:
-    """Use the model to distill one turn into a few durable facts."""
+    """Use the model to distill the user's own words into durable facts.
+
+    ``assistant_reply`` stays in the signature for callers, but it is not sent
+    to the extractor. In production smoke the model copied its own invented
+    sentence ("你之前提过想用杠铃卧推...") into long-term memory, which then
+    made the hallucination look like real history on the next turn.
+    """
     if settings.use_mock_llm:
         return []
     try:
@@ -351,10 +358,7 @@ async def extract_and_store(
         raw = await llm.complete_json(
             MEMORY_PROMPT,
             json.dumps(
-                {
-                    "user_message": user_message[:3000],
-                    "assistant_reply": assistant_reply[:3000],
-                },
+                {"user_message": user_message[:3000]},
                 ensure_ascii=False,
             ),
             db=db,

@@ -673,6 +673,7 @@ def context_as_text(context: dict) -> str:
     training = context.get("recent_training") or {}
     nutrition = context.get("nutrition_7d") or {}
     today_nutrition = context.get("today_nutrition") or {}
+    today = context.get("today") or {}
     lines = [
         f"用户：{profile.get('nickname') or '用户'}，"
         f"{profile.get('sex') or '?'}，{profile.get('age') or '?'} 岁，"
@@ -686,15 +687,27 @@ def context_as_text(context: dict) -> str:
         f"饮食近 7 天：记录 {nutrition.get('logged_days', 0)} 天，"
         f"{nutrition.get('kcal', 0)}kcal，蛋白质 {nutrition.get('protein_g', 0)}g。",
     ]
-    if today_nutrition:
+    if today:
+        # Without an explicit date the model guesses weekdays ("今天周二" on a
+        # Saturday). The context already carries the value; expose it in text.
         lines.append(
-            "今日饮食："
-            f"{today_nutrition.get('logged', {}).get('kcal', 0)}/"
-            f"{today_nutrition.get('targets', {}).get('kcal', 0)}kcal，"
-            f"剩余 {today_nutrition.get('remaining', {}).get('kcal', 0)}kcal，"
-            f"计划餐 {len(today_nutrition.get('logged_plan_meals', []))}/"
-            f"{len(today_nutrition.get('plan_meals', []))}。"
+            f"今天：{today.get('date')}（周{today.get('weekday_label') or '?'}）。"
         )
+    if today_nutrition:
+        logged_kcal = today_nutrition.get("logged", {}).get("kcal", 0)
+        target_kcal = today_nutrition.get("targets", {}).get("kcal", 0)
+        if logged_kcal <= 0:
+            # "剩余 2578 kcal" reads like the user already ate nothing and has
+            # a target; say that directly instead of exposing a subtraction.
+            lines.append(f"今日饮食：还没有记录，目标 {target_kcal} kcal。")
+        else:
+            lines.append(
+                "今日饮食："
+                f"{logged_kcal}/{target_kcal}kcal，"
+                f"剩余 {today_nutrition.get('remaining', {}).get('kcal', 0)}kcal，"
+                f"计划餐 {len(today_nutrition.get('logged_plan_meals', []))}/"
+                f"{len(today_nutrition.get('plan_meals', []))}。"
+            )
     if plan:
         lines.append(
             f"当前计划：{plan.get('title')}，第 {plan.get('current_week')} 周，"
