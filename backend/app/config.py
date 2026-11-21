@@ -97,6 +97,9 @@ class Settings(BaseSettings):
     sms_provider: str = "dev"
     sms_webhook_url: str = ""
     sms_webhook_token: str = ""
+    # Shared secret for the daily proactive-coach cron endpoint. Empty keeps
+    # the endpoint disabled; set it in the deployment .env before enabling cron.
+    proactive_cron_token: str = ""
     aliyun_pnvs_access_key_id: str = ""
     aliyun_pnvs_access_key_secret: str = ""
     aliyun_pnvs_sign_name: str = ""

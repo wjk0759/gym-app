@@ -6,6 +6,7 @@ This is the new session/capability/action surface. The legacy ``/agent`` and
 
 from __future__ import annotations
 
+import secrets
 from datetime import timedelta
 from typing import Any, Literal
 
@@ -13,6 +14,7 @@ from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, func, or_, select
 
+from ..config import settings
 from ..deps import CurrentUser, DBSession
 from ..models import (
     AIMemory,
@@ -26,7 +28,7 @@ from ..models import (
     utcnow,
 )
 from ..services import access, coach_vision, generation, photo_cache, vision_turns
-from ..services.coach_control import runtime
+from ..services.coach_control import proactive, runtime
 from ..services.coach_control.context import build_control_context
 from ..services.coach_control.events import emit_event, list_inbox
 from ..services.coach_control.registry import capability_payloads
@@ -81,6 +83,22 @@ def upload_client_diagnostic(
     )
     db.commit()
     return {"ok": True}
+
+
+@router.post("/proactive/run")
+def run_proactive(
+    db: DBSession,
+    token: str | None = Header(default=None, alias="X-Cron-Token"),
+):
+    """Daily cron entry point. Disabled until a token is configured."""
+    expected = settings.proactive_cron_token
+    if not expected:
+        raise HTTPException(status_code=503, detail="主动教练未配置")
+    if not token or not secrets.compare_digest(token, expected):
+        raise HTTPException(status_code=401, detail="无效的调度凭证")
+    result = proactive.run(db)
+    db.commit()
+    return result
 
 
 @router.get("/capabilities")

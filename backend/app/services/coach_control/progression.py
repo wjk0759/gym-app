@@ -145,8 +145,9 @@ def _day_date(
     if state is not None and state.assigned_date is not None:
         return state.assigned_date.isoformat()
     start = program.start_date or date.today()
+    offset = (int(day.weekday) - start.isoweekday()) % 7
     return (
-        start + timedelta(days=(day.week_index - 1) * 7 + day.weekday - 1)
+        start + timedelta(days=(day.week_index - 1) * 7 + offset)
     ).isoformat()
 
 
