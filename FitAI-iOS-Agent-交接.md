@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`cc18ebf`（AI 教练阶段 3 代码收口 + 硬化：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时/开关、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练、多习惯提醒、并发保护和主动教练开关但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V45**；后端 **739 passed**、QA **76/76**、Ruff 通过；**Mac 复测 22adfbc：N29/N30/N31/N33/N37 通过；N32/N34/N35/N36 已修待复测**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`58c8335`（AI 教练阶段 3 代码收口 + 硬化：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时/开关/分页、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练、多习惯提醒、并发保护和主动教练开关但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V45**；后端 **740 passed**、QA **76/76**、Ruff 通过；**Mac 复测 22adfbc：N29/N30/N31/N33/N37 通过；N32/N34/N35/N36 已修待复测**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -100,8 +100,8 @@
 - 生产：
   - CLI 复跑：扫描 16 人，`created=0`。
   - 旧用户默认开启；可在 App 设置关闭。
+- 后续：`58c8335` 已加 `offset/limit` + CLI 翻页，扫描不再停在 500。
 - 仍未做：
-  - 主动教练扫描上限 500、无分页；规模上来前要补。
   - iOS 开关和云同步未在 Windows 构建，需要 Mac 验证。
 - 需要 Mac：
   - build；设置页开关 → 云同步 → 服务端 `proactive_enabled=false` → 次日扫描不创建提醒。
@@ -125,9 +125,9 @@
   - 长事件/超过 5 次的文案不再邀请无法接上的“都跳过/保留哪几次”，改为要求缩小范围重说。
   - `backend/.env.example` 补充 `PROACTIVE_CRON_TOKEN`；新增 proactive 端点 503/401 测试。
 - 验证：后端 **738 passed**、QA **76/76**、Ruff 通过。
-- 仍需注意：
-  - 主动教练还**没有用户级 opt-out**；要加需要 `user_preferences` schema + Flyway + iOS 设置开关，未在阶段 3 内做。
-  - 主动教练扫描上限 500 人且无分页，规模上来前需要补。
+- 后续：
+  - `cc18ebf` 已加用户级 opt-out（V45）。
+  - `58c8335` 已加 `offset/limit` + CLI 翻页。
 - 需要 Mac：
   - 重新 build；验证内嵌教练并发保护/主聊天追加、多习惯提醒、N32/N34/N35/N36。
 - 仍 BLOCKED：APNs、iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
