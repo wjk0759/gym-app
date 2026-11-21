@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`a554d564`（AI 教练阶段 3 代码收口 + 硬化：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时/开关/分页、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练、多习惯提醒（含每项独立时间展示）、并发保护和主动教练开关但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V45**；后端 **746 passed**、QA **76/76**、Ruff 通过；**Mac 复测 58c8335：N34/N35/N36/动作器械解释通过，N41 已修；N38/N39/N40 P2 仍在；iOS 151/151 + SE 7/7；不部署**；**Windows c7f432f/f5a53c01/a554d564：N38/N39/N40 后端已修，生产写链路验收通过；iOS N40 卡片文案已修待 Mac 构建**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`4ec5311c`（AI 教练阶段 3 代码收口 + 硬化：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时/开关/分页、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练、多习惯提醒（含每项独立时间展示）、并发保护和主动教练开关但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V45**；后端 **747 passed**、QA **76/76**、Ruff 通过；**Mac 复测 58c8335：N34/N35/N36/动作器械解释通过，N41 已修；N38/N39/N40 P2 仍在；iOS 151/151 + SE 7/7；不部署**；**Windows c7f432f/f5a53c01/a554d564/4ec5311c：N38/N39/N40 后端已修，进度问答延迟降到 2.1–2.5s，生产写链路验收通过；iOS N40 卡片文案已修待 Mac 构建**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -54,9 +54,10 @@
   - **N38 字面 `?`**：`_week_reply` 的每日行从 `? {line}` 改为 `• {line}`，空摘要 fallback 改成“本周暂时没有训练安排。”；生产复测第二周回复已用 `•`。
   - **N40 多习惯不同时间**：解析消息里的每个时间表达式，并按分句把时间分配给对应习惯；“每天10点喝水，晚上10点睡觉”现在 payload 为 hydration 10:00 + sleep 22:00，确认 receipt 也分别列出两项时间。
   - **N40 iOS 卡片**：`reminderPendingText` 原来只取第一项时间；现在多习惯时间不同时逐项显示“喝水 10:00、睡眠 22:00”。iOS 未在 Windows 构建。
+  - **进度问答延迟**：`_should_try_semantic_route` 不再把含“多少/什么/哪个/哪/几组/几次”的只读问题送进能力路由模型；生产“下周哑铃交替弯举加多少重量”从 **9.5–14.9s** 降到 **2.1–2.5s**，确定性写解析仍在前面执行。
 - 验证：
-  - 后端 **746 passed**、QA **76/76**、Ruff 通过。
-  - 生产复测：标点-only 连续两轮，`/coach/memories` 的 `updated_at` 不再变化；第二周回复 `•`；N40 receipt 正确。
+  - 后端 **747 passed**、QA **76/76**、Ruff 通过。
+  - 生产复测：标点-only 连续两轮，`/coach/memories` 的 `updated_at` 不再变化；第二周回复 `•`；N40 receipt 正确；进度问答 2.1s / 2.5s。
   - 测试账号清理：撤销 `body.log_weight` 会 `recompute_profile_cache` 把 profile 体重清空；已恢复 `test_reviewer` 的 `weight_kg=70.1`、`body_fat_pct=18.0`。旧记忆 `preferred_bench_press` 仍在，属于测试账号历史数据，不是新写入。
 - 仍未验证：
   - 真实高负荷账号的 readiness / 进阶确认链路（只有单元测试）。
