@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`4607b96`（AI 教练 Release 1：只读问答 + 日历/反编造伤病 + 完整 `/coach/turns` 路由与记忆修复 + 对话式建档；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码仍 `7d03219`，Mac 已跑 `FitAITests` **144/144**、UI **7/7**，iOS `7d03219` 已装 Wu-Tang；`/health/ready` **200**；Flyway **V44**；后端 **697 passed**、QA **76/76**、Ruff 通过；**Mac 对 39 复测 N29/N30/N31 仍 P1；4607b96 待复测 N29–N33 + 建档**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`4607b96`（AI 教练 Release 1：只读问答 + 日历/反编造伤病 + 路由/记忆修复 + 对话式建档；生产 API 已部署；iOS App 仍 `7d03219`；`FitAITests` **144/144**、UI **7/7** 基线；`/health/ready` **200**；Flyway **V44**；后端 **697 passed**、QA **76/76**、Ruff 通过；**Mac 复测 N29/N30/N31 仍 P1、N32/N33 P2；建档 complete-profile 通过，本轮不部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -35,6 +35,18 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-21 · macOS（4607b96 复测：N29–N33 + 建档 complete-profile）
+
+- 环境：生产后端 `4607b96`；iOS `7d03219`；账号 `macqa_coach`；真实 3 练计划 + `app_context`。
+- **N29 P1 仍存在**：“我上周吃了什么” → `diet.log_food` + `draft:diet.log_food`，回复“没有找到上周记录…请提供食物和份量”。
+- **N30 P1 仍存在**：“把周五 C 的持瓶自重深蹲加一组” → `coach.answer`、无 pending；回复仍称“已换成前弓步”；“再加一组”把“一组”当动作名。改“3 组”/“删掉”正常；旧 `/agent/chat` 正常。
+- **N31 P1 仍存在**：`/coach/memories` 44 条 vs `/agent/memories` 27 条；`why` 仍引用“胸口不适”，档案 injuries 空；`squat_substitution` 等旧记忆仍影响改课。`build_memory_book` 未过滤 `AIMemory`。
+- **N32 P2**：“第一周每天练什么”只答“3 练，已完成 0 次”，不列每天。
+- **N33 P2**：“我有伤病吗”仍 safety 模板；`我的档案完整吗` 能正确说“伤病记录空”。
+- **建档通过**：“帮我完善档案”（档案已完整）→ “档案已经完整了”，无重复 draft/卡片；完整 4 问链路本轮未在 Mac 侧跑。
+- 已通过：上周/本周训练 0、最近饮食（带 context）、计划频率、体重趋势、上次训练 0、改期卡。
+- 本轮未部署；iOS 仍 `7d03219`，后端仍 `4607b96`。N29/N30/N31 优先，N32/N33 收口。
 
 ### 2026-11-21 · Windows（对话式建档 slot-filling）
 
