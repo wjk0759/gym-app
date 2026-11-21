@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`39cca40`（AI 教练 Release 1 只读问答 + 日历/反编造伤病 + 完整 `/coach/turns` 路由与记忆修复；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码仍 `7d03219`，Mac 已跑 `FitAITests` **144/144**、UI **7/7**，iOS `7d03219` 已装 Wu-Tang；`/health/ready` **200**；Flyway **V44**；后端 **691 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`4607b96`（AI 教练 Release 1：只读问答 + 日历/反编造伤病 + 完整 `/coach/turns` 路由与记忆修复 + 对话式建档；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码仍 `7d03219`，Mac 已跑 `FitAITests` **144/144**、UI **7/7**，iOS `7d03219` 已装 Wu-Tang；`/health/ready` **200**；Flyway **V44**；后端 **697 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -35,6 +35,40 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-21 · Windows（对话式建档 slot-filling）
+
+- 提交：`4607b96`，已推 `develop`；生产 API 已重建，`/health/ready` 200。
+- 新增 `backend/app/services/coach_control/onboarding.py`：
+  - 用户说“帮我完善档案 / 建档 / 完善资料”进入流程。
+  - 分 4 组提问：基础信息（性别、出生年月、身高、体重）→ 目标 → 每周天数/单次时长 → 器械。
+  - 每一步都可一次说多个字段；支持“跳过”，跳过项不写入，也不会把档案标记为完整。
+  - 草稿存 `coach_pending`（kind=draft），重启/换设备后能继续，不会从第一题重来。
+  - 信息齐了只生成 **一张 `coach.batch` 确认卡**，确认后一次执行 4 个已有能力：`profile.update`、`body.log_weight`、`profile.update_goal`、`profile.update_equipment`；整组可撤销。
+- `profile.update` 扩展：
+  - 新增 `birth_date`、`weekly_days`、`session_minutes`、`mark_onboarded`。
+  - before/after 快照对 date/datetime 做 JSON 序列化，undo 能恢复 `onboarded_at`。
+- 路由：
+  - `profile.onboard` 草稿优先于普通问答；用户在中途问正常问题会退出流程并正常回答。
+  - 档案已完整时不会重复生成建档卡，只回复“已经完整了”。
+- 冒烟（测试账号 `13900000014`，临时 Pro，跑完已清理）：
+  - 5 轮：建档 → 基础信息 → 增肌 → 每周3天/每次45分钟 → 只有哑铃。
+  - 最终返回 `coach.batch` 4 项；确认后 `profile.update` / 体重 / 目标 / 器械全部成功。
+  - 校验：男、1995-06、178cm、72kg、每周3天×45分钟、器械徒手+哑铃、目标增肌、`onboarded_at` 有值。
+  - 清理：恢复空白档案、删除目标/体重/训练会话/临时 Pro 额度。
+- 验证：后端 **697 passed**、QA **76/76**、Ruff 通过；新增 6 个测试覆盖多字段解析、跳过、完整档案、批量确认和 undo。
+- iOS：无代码改动；现有 batch 卡和 draft 提示（“还需要补充一点信息”）直接可用。
+- 未验证：
+  - 没有在真实用户 `13428104171` 上跑建档写操作；只读问答已验证。
+  - 没有验证 iOS 真机上 batch 确认后 profile 页面的本地状态刷新（依赖 `refresh_domains`，服务端已返回 profile/body/diet/review）。
+- 下一步：
+  - 让 Mac 在 TestFlight 真机验证建档 4 问 + 确认卡 + profile 页刷新。
+  - 进 Release 2：生活事件重排 + 提醒/习惯。
+- 禁止恢复：
+  - 不要把建档拆成每项一张确认卡；只保留最后一次 batch 确认。
+  - 不要从助手回复里抽记忆（上一轮已修）；建档回答也不能被记成用户偏好。
+  - 不要在未确认时写 profile/体重/目标/器械。
+- 仍 BLOCKED：真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
 
 ### 2026-11-21 · Windows（完整 `/coach/turns` 冒烟：路由、额度、记忆）
 
