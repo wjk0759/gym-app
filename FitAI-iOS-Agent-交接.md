@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`bdac942`（AI 教练 Release 1 + Release 2 + Release 3 readiness/自适应复盘/训练中 co-pilot（含内嵌浮层）/按动作进阶（含自重）/主动教练定时；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout 和训练页内嵌教练但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **728 passed**、QA **76/76**、Ruff 通过；**Mac 复测 22adfbc：N29/N30/N31/N33/N37 通过；N32 P2；N34 P1/P2、N35/N36 P2；本轮不部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`b5494c6`（AI 教练 Release 1 + Release 2 + Release 3 readiness/自适应复盘/训练中 co-pilot（含内嵌浮层）/按动作进阶（含自重）/主动教练定时 + Mac N32/N34/N35/N36 修复；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、训练页内嵌教练和多习惯提醒但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **732 passed**、QA **76/76**、Ruff 通过；**Mac 复测 22adfbc：N29/N30/N31/N33/N37 通过；N32/N34/N35/N36 已修待复测；本轮不部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -80,6 +80,30 @@
   - 不要把习惯提醒标识改成 `workout-*`；不要用关闭训练提醒去删 `habit-*`。
   - 不要声称习惯提醒跨设备同步。
 - 仍 BLOCKED：iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
+
+### 2026-11-21 · Windows（Mac N32/N34/N35/N36 修复）
+
+- 提交：`b5494c6`，已推 `develop`；生产 API 已重建，`/health/ready` 200。
+- **N34**：
+  - 只要事件词 + 可解析日期窗口，即使没说“训练/顺延/跳过”，也进入生活事件卡。
+  - “下周一到周三出差”在 Mon/Wed/Fri 计划上会生成顺延 batch；测试账号当前是 Tue/Thu/Sat，窗口内没有训练，所以回复“本来没有安排”，这是正确分支。
+  - 新增单元测试：无“训练”二字也生成 2 个 reschedule。
+- **N35**：
+  - 事件跨度 >14 天时不再逐次顺延，直接说明“会打乱整个计划”，建议跳过或回来重排。
+  - 生产冒烟“接下来30天都在外地” → `training.life_event`，无 pending，回复解释跨度。
+- **N36**：
+  - `ui.configure_reminders` 支持多习惯：`reminder_items` 数组。
+  - “每天10点提醒我喝水和睡觉” → hydration + sleep 两项，iOS 逐个排本地通知/关闭。
+  - 新增 `AgentReminderItem` 和 iOS 多 reminding 分支；卡片显示“喝水、睡眠”。
+- **N32**：
+  - `training.week_schedule` 的聊天回复现在包含每日明细，不再只给“3 练”摘要。
+  - “第一周每天练什么”按 `week_index` 取第 1 周，列出周二/周四/周六。
+- 验证：后端 **732 passed**、QA **76/76**、Ruff 通过；生产冒烟 N32/N35/N36 通过。
+- 需要 Mac：
+  - 重新 build；多习惯提醒的 `AgentReminderItem`/`reminderItems` 编译和真机排程需要确认。
+  - 用 macqa_coach 的 Mon/Wed/Fri 计划复测 N34，确认无“训练”二字也出顺延/跳过卡。
+  - 复测 N32 每日明细和 N35 长窗口说明。
+- 仍 BLOCKED：APNs、N33 话术、iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
 
 ### 2026-11-21 · Windows（Release 3：训练页内嵌 co-pilot 浮层）
 
