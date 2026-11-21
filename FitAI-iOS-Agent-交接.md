@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`46e0ae3f`（AI 教练阶段 3 代码收口 + 硬化：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时/开关/分页、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练、多习惯提醒（含每项独立时间展示）、并发保护和主动教练开关；**Mac 已 build/test 并安装 Wu-Tang**；`/health/ready` **200**；Flyway **V45**；后端 **758 passed**、QA **76/76**、Ruff 通过；**真实 LLM coach-control eval 13/13（deepseek-flash）**；**Mac API 复测 46e0ae3：N44/N45 通过，N38/N39/N40/N41/N34/N35/N36 回归通过；身高/BMI/体重/体脂/目标/年龄/频率只读问答正确；iOS 151/151 + SE 7/7；Release 已安装 Wu-Tang 并启动；无 P2，已部署；App 内 XCUITest 压力测试新增 N46/N47 P2 + N48/N49 P3（见新条目）**；**Windows c7f432f…46e0ae3f：N38/N39/N40 已修，N44 身高/BMI 只读与档案值已修，N45 冲突身高/体重记忆已从记忆书/列表/上下文/长对话检索过滤，plan_version/体重 fallback/进阶取整补齐；高负荷 readiness/进阶上下行与写链路生产验收通过；iOS N40 卡片 Mac 编译通过**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`ee2eab1e`（AI 教练阶段 3 代码收口 + 硬化：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时/开关/分页、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练、多习惯提醒（含每项独立时间展示）、并发保护和主动教练开关；**Mac 已 build/test 并安装 Wu-Tang**；`/health/ready` **200**；Flyway **V45**；后端 **762 passed**、QA **76/76**、Ruff 通过；**真实 LLM coach-control eval 13/13（deepseek-flash）**；**Mac API 复测 46e0ae3：N44/N45 通过，N38/N39/N40/N41/N34/N35/N36 回归通过；身高/BMI/体重/体脂/目标/年龄/频率只读问答正确；iOS 151/151 + SE 7/7；Release 已安装 Wu-Tang 并启动；无 P2，已部署；App 内 XCUITest 压力测试新增 N46/N47 P2 + N48/N49 P3**；**Windows ee2eab1e：N46 重复提问语气护栏、N47 “今天练什么”快捷入口、N48 计划周滚动锚点、N49 周卡 bullet 已修；此前 N38/N39/N40/N44/N45、plan_version/体重 fallback/进阶取整和高负荷 readiness/进阶上下行均已验收**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -92,9 +92,9 @@
 - iOS：`xcodegen generate` + clean `xcodebuild test`；iPhone 17 全量 **151/151**（含 UI），iPhone SE 3 UI **7/7**；多习惯卡片逐项时间（`喝水 10:00、睡眠 22:00`）编译通过；未安装新包。
 - 本轮不部署：iOS 真机仍 `7d03219`；生产后端 `6dca8bd0`，`/health/ready` 200。N44 为 P2，修完再装 Wu-Tang。
 
-### 2026-11-21 · Windows（阶段 3 生产写链路 + 高负荷 readiness + N38/N40 修复）
+### 2026-11-21 · Windows（阶段 3 生产写链路 + 高负荷 readiness + N38/N40/N46–N49 修复）
 
-- 提交：`c7f432f`、`f5a53c01`、`4ec5311c`、`68a8c549`、`6dca8bd0`、`1fec7bb9`、`b87c57c0`、`7d77b6f3`、`46e0ae3f`，已推 `develop`；生产 API 已重建，`/health/ready` 200。
+- 提交：`c7f432f`、`f5a53c01`、`4ec5311c`、`68a8c549`、`6dca8bd0`、`1fec7bb9`、`b87c57c0`、`7d77b6f3`、`46e0ae3f`、`ee2eab1e`，已推 `develop`；生产 API 已重建，`/health/ready` 200。
 - 完整 `/coach/turns` 生产冒烟（`test_reviewer`，真实 LLM）：
   - 只读问答 9 条全部 `coach.answer`（除周安排）：上周训练 0 次、最近饮食 0 条、readiness no_data、计划解释、档案缺失、伤病“无记录”、深蹲要点；延迟 **0.95–2.7s**。
   - “下周哑铃交替弯举加多少重量”两次分别 **9.5s / 14.9s**，命中 `coach_intent_router` 后才回答；内容正确（无记录先保持），但延迟偏高，后续可只看是否要跳过语义路由。
@@ -122,7 +122,11 @@
   - **进阶取整 no-op**：最小杠铃片/哑铃档位大于 2.5%/5% 时，不再生成“30kg→30kg ↑”或“8kg→8kg ↓”的假变化，改为 hold 并说明最小档位；新增 30kg 杠铃、8kg 哑铃测试。
   - **N44 身高只读问答**：`_looks_like_profile_update` 的问题词 guard 补 `多少/多高/多重/多大/几/是什么/是多少/算一下/BMI`，并识别裸字段“我的身高/我身高”；`_profile_summary` 现在输出年龄、身高、体重、体脂、BMI 等实际值。生产复测：`我的身高是多少` → 178cm，`按我的身高算一下BMI` → BMI 22.1。
   - **N45 冲突身体记忆**：`memory_conflicts_with_profile` 过滤与当前 profile 身高/体重冲突的旧记忆，`build_memory_book`、`/coach/memories`、coach context 和长对话 `read_relevant_memories` 都不再注入；临时写入 180cm 记忆后 `/coach/memories` 不显示，随后已删除。
-  - 复跑 eval：仍 **13/13**；后端 **758 passed**。
+  - **N46 重复提问语气**：提示词增加“重复提问直接给结论、不评论问了几遍/不质疑动机”；`strip_defensive_meta_commentary` 确定性删除“问第三遍了/你在测我/档案显示不对”等句子。生产连续问 3 次身高，回复分别为“178cm。”“178cm，没变。”“178 厘米。”，无防御语气。
+  - **N47 快捷入口**：`训练计划` 快捷卡改为“今天练什么”，发送“今天练什么”，不再发送“帮我安排今天的训练”。
+  - **N48 计划周 vs 日历周**：服务端计划日期改为和 iOS 一致的滚动锚点（计划生成日），不再按周一对齐；周安排文案改为“计划第 X 周”。新增 `plan_day_date` 测试。
+  - **N49 周卡 bullet**：周安排洞察卡每日行从 `·` 改为 `•`，和聊天文本一致。
+  - 复跑 eval：仍 **13/13**；后端 **762 passed**。
 - 本轮修复：
   - **跨周计划**：`current_plan_context` 只带当前周，导致“下周/第二周”看不到训练。新增 `plan_days_with_dates()`，从服务端 `Program/ProgramDay/PlanDayState` 计算完整日期；`life_events` 和 `training.week_schedule` 改为优先读服务端计划，客户端快照只做兜底。
   - **第 X 周路由**：`_looks_like_week_schedule` 支持“第一周/第二周/第八周”，不再只认“一周”。
@@ -133,7 +137,7 @@
   - **N40 iOS 卡片**：`reminderPendingText` 原来只取第一项时间；现在多习惯时间不同时逐项显示“喝水 10:00、睡眠 22:00”。iOS 未在 Windows 构建。
   - **进度问答延迟**：`_should_try_semantic_route` 不再把含“多少/什么/哪个/哪/几组/几次”的只读问题送进能力路由模型；生产“下周哑铃交替弯举加多少重量”从 **9.5–14.9s** 降到 **2.1–2.5s**，确定性写解析仍在前面执行。
 - 验证：
-  - 后端 **758 passed**、QA **76/76**、Ruff 通过。
+  - 后端 **762 passed**、QA **76/76**、Ruff 通过。
   - 生产复测：标点-only 连续两轮，`/coach/memories` 的 `updated_at` 不再变化；第二周回复 `•`；N40 receipt 正确；进度问答 2.1s / 2.5s；高负荷 `ACWR 3.33` readiness 与进阶上下行确认/撤销均通过；真实 LLM control-plane eval **13/13**。
   - 测试账号清理：撤销 `body.log_weight` 会 `recompute_profile_cache` 把 profile 体重清空；已恢复 `test_reviewer` 的 `weight_kg=70.1`、`body_fat_pct=18.0`。旧记忆 `preferred_bench_press` 仍在，属于测试账号历史数据，不是新写入。
 - 仍未验证：
@@ -141,7 +145,7 @@
   - 真实 LLM eval 已建立 13/13 基线，但模型措辞仍可能波动；改 prompt/context 后要重跑。
   - iOS 构建/真机（Windows 未编译）。
 - 需要 Mac：
-  - `git pull` → `xcodegen generate` → build/test；重点复测设置页主动教练开关、内嵌教练、习惯提醒、N32/N34/N35/N36，以及 N38/N39/N40/N44/N45（第二周/多习惯时间/周安排 bullet/身高问答/冲突记忆）；确认多习惯 pending 卡逐项显示时间。
+  - `git pull` → `xcodegen generate` → build/test；重点复测设置页主动教练开关、内嵌教练、习惯提醒、N32/N34/N35/N36，以及 N38/N39/N40/N44/N45/N46/N47/N48/N49（周安排 bullet/身高问答/冲突记忆/重复提问语气/今天练什么快捷入口/计划周滚动锚点/周卡 bullet）；确认多习惯 pending 卡逐项显示时间。
   - 在 App 里连问两轮无关问题，确认 `/coach/memories` 顺序/时间不再跳动。
 - 仍 BLOCKED：APNs、iOS 构建/真机验收、ICP/App 备案、生成式 AI 登记、App Store Connect/IAP/TestFlight。
 
