@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`a2f8307`（中国区 ICP 备案站点 + HTTPS；iOS App 代码仍 `7d03219`；Mac 已跑 `FitAITests` **144/144**、UI **7/7**，iOS `7d03219` 已装 Wu-Tang；生产后端仍 `66694f9`，`/health/ready` **200**；Flyway **V44**；后端 **678 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`3252f59`（AI 教练 Release 1 只读数据问答；生产 API 已部署该后端版本；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码仍 `7d03219`，Mac 已跑 `FitAITests` **144/144**、UI **7/7**，iOS `7d03219` 已装 Wu-Tang；`/health/ready` **200**；Flyway **V44**；后端 **683 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -35,6 +35,27 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-21 · Windows（AI 教练 Release 1：只读数据问答）
+
+- 提交：`3252f59`，已推 `develop`；生产 API 已更新并重建，`/health/ready` 200。
+- 新增 `backend/app/services/coach_control/insights.py`：
+  - 训练：最近窗口的训练次数、组数、总容量、最近训练、练得最多的动作；问到具体动作时给该动作的组数/最大重量/容量。
+  - 饮食：最近窗口的记录天数、条数、热量、蛋白质、碳水、脂肪、最近记录。
+  - 身体：复用 `body.review_trend` 的确定性趋势，不让模型做算术。
+  - 计划：当前计划标题、周数、每周几次、第 1 周每天标题/重点/动作数。
+  - 档案：缺失字段（出生日期、身高、体重、目标、是否完成建档），用于对话式建档。
+- `coach.answer` 现在把上述事实注入提示词；模型只负责措辞和解释，不再猜数字。动作型请求不会注入事实，避免把失败的写操作变成数据总结。
+- 验证：
+  - `pytest tests` **683 passed**；QA **76/76**；Ruff 通过。
+  - 新增 5 个测试：训练/饮食/计划/档案事实，以及 `coach_answer` 提示词注入。
+  - 生产容器 `import app.main` + `import app.services.coach_control.insights` 通过；外部 `/health/ready` 200。
+- 未验证：
+  - 没有用真实账号跑 DeepSeek 问答质量/延迟；需要 TestFlight 账号冒烟。
+  - iOS 无代码改动，现有聊天 UI 直接显示文本答案。
+- 下一步：Release 2 生活事件重排 + 提醒/习惯；先让真实账号试“我上周练了几次 / 最近饮食怎么样 / 为什么这样安排计划”。
+- 禁止恢复：不要让模型自己做总量/容量/热量算术；不要把只读事实注入到写操作卡片；`insights.py` 不允许写库。
+- 仍 BLOCKED：真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
 
 ### 2026-11-20 · Windows（中国区 ICP 备案站点上线）
 
