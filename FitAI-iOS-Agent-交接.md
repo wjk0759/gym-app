@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`f5a53c01`（AI 教练阶段 3 代码收口 + 硬化：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时/开关/分页、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练、多习惯提醒、并发保护和主动教练开关但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V45**；后端 **746 passed**、QA **76/76**、Ruff 通过；**Mac 复测 58c8335：N34/N35/N36/动作器械解释通过，N41 已修；N38/N39/N40 P2 仍在；iOS 151/151 + SE 7/7；不部署**；**Windows c7f432f/f5a53c01：N38/N39/N40 已修，生产写链路验收通过**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`a554d564`（AI 教练阶段 3 代码收口 + 硬化：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时/开关/分页、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练、多习惯提醒（含每项独立时间展示）、并发保护和主动教练开关但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V45**；后端 **746 passed**、QA **76/76**、Ruff 通过；**Mac 复测 58c8335：N34/N35/N36/动作器械解释通过，N41 已修；N38/N39/N40 P2 仍在；iOS 151/151 + SE 7/7；不部署**；**Windows c7f432f/f5a53c01/a554d564：N38/N39/N40 后端已修，生产写链路验收通过；iOS N40 卡片文案已修待 Mac 构建**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -53,6 +53,7 @@
   - **标点-only 记忆**：自动抽取前要求至少 4 个有效字符，`？？？？？？？？` 不再触发记忆模型。
   - **N38 字面 `?`**：`_week_reply` 的每日行从 `? {line}` 改为 `• {line}`，空摘要 fallback 改成“本周暂时没有训练安排。”；生产复测第二周回复已用 `•`。
   - **N40 多习惯不同时间**：解析消息里的每个时间表达式，并按分句把时间分配给对应习惯；“每天10点喝水，晚上10点睡觉”现在 payload 为 hydration 10:00 + sleep 22:00，确认 receipt 也分别列出两项时间。
+  - **N40 iOS 卡片**：`reminderPendingText` 原来只取第一项时间；现在多习惯时间不同时逐项显示“喝水 10:00、睡眠 22:00”。iOS 未在 Windows 构建。
 - 验证：
   - 后端 **746 passed**、QA **76/76**、Ruff 通过。
   - 生产复测：标点-only 连续两轮，`/coach/memories` 的 `updated_at` 不再变化；第二周回复 `•`；N40 receipt 正确。
@@ -62,7 +63,7 @@
   - 正式 LLM 答案质量 eval 基线（本轮是生产冒烟，不是可重复评分集）。
   - iOS 构建/真机（Windows 未编译）。
 - 需要 Mac：
-  - `git pull` → `xcodegen generate` → build/test；重点复测设置页主动教练开关、内嵌教练、习惯提醒、N32/N34/N35/N36，以及 N38/N39/N40（第二周/多习惯时间/周安排 bullet）。
+  - `git pull` → `xcodegen generate` → build/test；重点复测设置页主动教练开关、内嵌教练、习惯提醒、N32/N34/N35/N36，以及 N38/N39/N40（第二周/多习惯时间/周安排 bullet）；确认多习惯 pending 卡逐项显示时间。
   - 在 App 里连问两轮无关问题，确认 `/coach/memories` 顺序/时间不再跳动。
 - 仍 BLOCKED：APNs、iOS 构建/真机验收、ICP/App 备案、生成式 AI 登记、App Store Connect/IAP/TestFlight。
 
