@@ -5775,6 +5775,12 @@ def test_plan_adjust_recognizes_time_and_recovery_words():
     assert not runtime._looks_like_week_schedule("这周计划太满")
 
 
+def test_progression_question_skips_the_semantic_router():
+    assert not runtime._should_try_semantic_route("下周哑铃交替弯举加多少重量")
+    assert not runtime._should_try_semantic_route("哪个动作更适合新手")
+    assert runtime._should_try_semantic_route("把深蹲改成3组")
+
+
 def test_configure_plan_parses_chinese_frequency_and_split():
     from app.services.coach_control.capabilities import plan_configure
 

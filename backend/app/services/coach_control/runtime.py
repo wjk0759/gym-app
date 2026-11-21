@@ -627,7 +627,10 @@ def _should_try_semantic_route(message: str) -> bool:
     value = message.strip()
     if not value or len(value) > 120:
         return False
-    if re.search(r"怎么|为什么|如何|什么是|吗|？|\?", value):
+    if re.search(
+        r"怎么|为什么|如何|什么是|什么|多少|哪个|哪|几组|几次|吗|？|\?",
+        value,
+    ):
         return False
     if re.search(
         r"记|改|换|加|删|安排|开始|打开|设置|设到|取消|恢复|跳过|完成|"
