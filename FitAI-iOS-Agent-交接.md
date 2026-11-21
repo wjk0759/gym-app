@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`d5b1195`（AI 教练 Release 1 + Release 2 + Release 3 readiness/自适应复盘 + Mac P1 修复；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒改动但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **715 passed**、QA **76/76**、Ruff 通过；**N29/N30/N31/N32 已修，N33 仍 P2；建档 complete-profile 通过**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`f9ed8da`（AI 教练 Release 1 + Release 2 + Release 3 readiness/自适应复盘/训练中 co-pilot + Mac P1 修复；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒和 active_workout 上下文但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **718 passed**、QA **76/76**、Ruff 通过；**N29/N30/N31/N32 已修，N33 仍 P2**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -69,6 +69,35 @@
   - 不要把习惯提醒标识改成 `workout-*`；不要用关闭训练提醒去删 `habit-*`。
   - 不要声称习惯提醒跨设备同步。
 - 仍 BLOCKED：iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
+
+### 2026-11-21 · Windows（Release 3：训练中 co-pilot）
+
+- 提交：`f9ed8da`，已推 `develop`；生产 API 已重建，`/health/ready` 200。
+- 客户端上下文：
+  - iOS `agentAppContext()` 在 `workoutDraft` 存在时增加 `active_workout`：训练日标题、当前动作名/slug、计划组数、已完成组数、上一组重量/次数/RPE、已训练秒数、主观感受。
+  - 没有进行中的训练时不发送这个字段。
+- 服务端回答：
+  - `coach.answer` 把 `active_workout` 注入提示词，明确“只能据此回答，不要编造未给出的组数”。
+  - 上一组 RPE ≥9 时，提示词硬性要求“不建议加重量，保持或降 5%，确认动作没有变形”。
+  - 主观感受 ≤2 时，建议降 1 组或降 5%。
+- 生产冒烟（合成卧推状态：80kg×8，RPE 9，4 组完成 2 组）：
+  - “下一组怎么练” → `coach.answer`，回复降到 75kg×8，休息 2–3 分钟。
+  - “这个重量还能加吗” → `coach.answer`，明确“别加”，守 80kg，掉到 6 次以内再降 75kg。
+  - 两次都没有 pending 卡。
+- 验证：后端 **718 passed**、QA **76/76**、Ruff 通过；新增 3 个 co-pilot 测试。
+- 需要 Mac：
+  - 重新 build；在真机训练页打开教练，确认 `active_workout` 上下文随当前动作/组数更新。
+  - 确认聊天切回训练不丢 draft，RPE 9 时教练不鼓励加重量。
+- 未验证：
+  - iOS 本轮改动未在 Windows 构建；`WorkoutDraft` 与 `PlanExercise` 字段编译需 Mac 确认。
+  - 目前是“训练中切到教练聊天”的 co-pilot，不是训练页内嵌浮层。
+- 下一步：
+  - Release 3 剩余：按动作的自适应周期化、主动推送调度（当前 readiness inbox 是事件触发，不是定时任务）。
+  - 训练页内嵌 co-pilot 浮层。
+- 禁止恢复：
+  - 不要在 RPE ≥9 时建议加重量。
+  - 不要在没有 `active_workout` 时编造当前动作或已完成组数。
+- 仍 BLOCKED：N33 话术、iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
 
 ### 2026-11-21 · Windows（Release 3：恢复/readiness + 自适应复盘）
 
