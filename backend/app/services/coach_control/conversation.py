@@ -38,6 +38,7 @@ from ..equipment_inventory import effective_equipment_types
 from ..memory import (
     is_pending_action_fact,
     latest_session_summary,
+    memory_conflicts_with_profile,
     read_relevant_memories,
 )
 from ..queries import active_goal, active_program
@@ -218,6 +219,12 @@ def build_memory_book(db: Session, user_id: str) -> str:
         # A pending/executed action fact is not a durable user preference. Old
         # injury memories must not contradict an empty profile.injuries list.
         if is_pending_action_fact(item.kind, content):
+            continue
+        if memory_conflicts_with_profile(
+            profile,
+            item.memory_key,
+            content,
+        ):
             continue
         if item.kind == "goal":
             continue

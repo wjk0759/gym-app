@@ -271,6 +271,17 @@ def test_profile_weight_from_body_metric_is_not_missing(db, seeded):
     assert "基础档案已完整" in summary
 
 
+def test_profile_summary_includes_basic_values(db, seeded):
+    profile = db.get(Profile, "user-1")
+
+    summary = _profile_summary(db, profile)
+
+    assert "基础：" in summary
+    assert "175cm" in summary
+    assert "72kg" in summary
+    assert "BMI" in summary
+
+
 def test_profile_injury_codes_are_localized(db, seeded):
     profile = db.get(Profile, "user-1")
     profile.injuries = ["knee_pain", "lower_back"]
@@ -370,6 +381,30 @@ def test_coach_answer_injects_ledger_facts(db, seeded, monkeypatch):
     assert result["reply"] == "ok"
     assert captured["context"] is not None
     assert "训练（最近 28 天）：2 次" in captured["context"]
+
+
+def test_height_question_injects_profile_values(db, seeded, monkeypatch):
+    captured: dict[str, str | None] = {}
+
+    async def fake_reply(db, profile, program, history, message, **kwargs):
+        captured["context"] = kwargs.get("context")
+        return {"reply": "ok", "safety_flag": None}
+
+    monkeypatch.setattr(coach_answer, "coach_reply", fake_reply)
+    profile = db.get(Profile, "user-1")
+    asyncio.run(
+        coach_answer.resolve(
+            db,
+            profile,
+            seeded,
+            [],
+            "我的身高是多少",
+        )
+    )
+
+    assert captured["context"] is not None
+    assert "175cm" in captured["context"]
+    assert "72kg" in captured["context"]
 
 
 def test_coach_answer_removes_invented_injury_claims(db, seeded, monkeypatch):

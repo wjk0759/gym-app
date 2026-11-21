@@ -5781,6 +5781,32 @@ def test_progression_question_skips_the_semantic_router():
     assert runtime._should_try_semantic_route("把深蹲改成3组")
 
 
+def test_profile_read_questions_are_not_updates():
+    for message in (
+        "我的身高是多少",
+        "我的身高",
+        "身高多少",
+        "我身高多少",
+        "我的身高体重是多少",
+        "按我的身高算一下BMI",
+    ):
+        assert not runtime._looks_like_profile_update(message), message
+
+    assert runtime._looks_like_profile_update("把身高改成180")
+    assert runtime._looks_like_profile_update("我身高180")
+
+
+def test_height_question_routes_to_coach_answer(db):
+    import asyncio
+
+    result = asyncio.run(
+        runtime.handle_turn(db, "user-1", "我的身高是多少")
+    )
+
+    assert result["intent"] == "coach.answer"
+    assert result["pending"] is None
+
+
 def test_configure_plan_parses_chinese_frequency_and_split():
     from app.services.coach_control.capabilities import plan_configure
 
@@ -6601,6 +6627,27 @@ def test_memory_book_hides_pending_and_stale_injury_facts(db):
                 content="目标是减脂",
                 active=True,
             ),
+            AIMemory(
+                user_id="user-1",
+                kind="constraint",
+                memory_key="height_cm",
+                content="身高 180cm",
+                active=True,
+            ),
+            AIMemory(
+                user_id="user-1",
+                kind="constraint",
+                memory_key="weight_kg",
+                content="体重 80kg",
+                active=True,
+            ),
+            AIMemory(
+                user_id="user-1",
+                kind="constraint",
+                memory_key="height_cm_current",
+                content="身高 178cm",
+                active=True,
+            ),
         ]
     )
     db.commit()
@@ -6611,6 +6658,9 @@ def test_memory_book_hides_pending_and_stale_injury_facts(db):
     assert "胸口不适" not in text
     assert "前弓步" not in text
     assert "减脂" not in text
+    assert "180" not in text
+    assert "80kg" not in text
+    assert "178cm" in text
 
 
 def test_keyword_memory_retrieval_finds_old_constraints(db):

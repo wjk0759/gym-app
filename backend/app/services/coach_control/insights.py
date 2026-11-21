@@ -324,14 +324,15 @@ def _profile_summary(db: Session, profile: Profile) -> str:
     to invent gaps such as equipment or sleep when the real profile is complete.
     """
     missing: list[str] = []
+    weight = profile.weight_kg
     if profile.birth_date is None:
         missing.append("出生日期")
     if profile.height_cm is None:
         missing.append("身高")
-    if profile.weight_kg is None:
+    if weight is None:
         # Body check-ins are a valid source too. A user who only logs weight
         # through a body metric should not be told the profile is missing it.
-        latest_weight = db.execute(
+        weight = db.execute(
             select(BodyMetric.weight_kg)
             .where(
                 BodyMetric.user_id == profile.user_id,
@@ -340,7 +341,7 @@ def _profile_summary(db: Session, profile: Profile) -> str:
             .order_by(BodyMetric.measured_at.desc())
             .limit(1)
         ).scalar_one_or_none()
-        if latest_weight is None:
+        if weight is None:
             missing.append("体重")
     if not profile.onboarded_at:
         missing.append("完成建档")
@@ -364,23 +365,34 @@ def _profile_summary(db: Session, profile: Profile) -> str:
     schedule_line = (
         f"每周训练 {profile.weekly_days} 天，每次 {profile.session_minutes} 分钟"
     )
-    if not missing:
-        return (
-            "档案：基础档案已完整，没有缺失项。\n"
-            + equipment_line
-            + "\n"
-            + schedule_line
-            + "\n"
-            + injury_line
-        )
-    return (
-        "档案：还缺 " + "、".join(missing) + "。\n"
-        + equipment_line
-        + "\n"
-        + schedule_line
-        + "\n"
-        + injury_line
+    sex = {"male": "男", "female": "女"}.get(
+        str(profile.sex or "").lower(),
+        profile.sex,
     )
+    basic: list[str] = []
+    if sex:
+        basic.append(str(sex))
+    if profile.age is not None:
+        basic.append(f"{int(profile.age)}岁")
+    if profile.height_cm is not None:
+        basic.append(f"{float(profile.height_cm):g}cm")
+    if weight is not None:
+        basic.append(f"{float(weight):g}kg")
+    if profile.body_fat_pct is not None:
+        basic.append(f"体脂 {float(profile.body_fat_pct):g}%")
+    bmi = profile.bmi
+    if bmi is None and weight is not None and profile.height_cm:
+        bmi = float(weight) / ((float(profile.height_cm) / 100) ** 2)
+    if bmi is not None:
+        basic.append(f"BMI {float(bmi):.1f}")
+    basic_line = "基础：" + "，".join(basic) if basic else "基础：未填"
+    lines = [basic_line]
+    if not missing:
+        lines.append("档案：基础档案已完整，没有缺失项。")
+    else:
+        lines.append("档案：还缺 " + "、".join(missing) + "。")
+    lines.extend([equipment_line, schedule_line, injury_line])
+    return "\n".join(lines)
 
 
 def _recovery_summary(db: Session, user_id: str) -> str:
@@ -579,7 +591,25 @@ def build_readonly_context(
         return None
 
     sections: list[str] = []
-    if any(word in text for word in ("建档", "档案", "资料", "还缺", "完善")):
+    if any(
+        word in text
+        for word in (
+            "建档",
+            "档案",
+            "资料",
+            "还缺",
+            "完善",
+            "基础信息",
+            "身高",
+            "体重",
+            "年龄",
+            "性别",
+            "多高",
+            "多重",
+            "BMI",
+            "bmi",
+        )
+    ):
         profile = db.get(Profile, user_id)
         if profile is not None:
             sections.append(_profile_summary(db, profile))

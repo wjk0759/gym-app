@@ -17,7 +17,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from ..config import settings
-from ..models import AIMemory, CoachTurn, utcnow
+from ..models import AIMemory, CoachTurn, Profile, utcnow
 from . import llm
 from .prompt_registry import prompt_version
 
@@ -133,8 +133,52 @@ def _fact_conflicts_with_plan(
     return bool("交替" in content and len(actual) >= 3 and len(mentioned) <= 2)
 
 
+_BODY_NUMBER_RE = re.compile(r"\d{2,3}(?:\.\d+)?")
+
+
+def memory_conflicts_with_profile(
+    profile: Profile | None,
+    memory_key: str,
+    content: str,
+) -> bool:
+    """Drop old body facts that contradict the canonical profile.
+
+    Profile and body metrics own height/weight. An old memory such as
+    ``height_cm=180`` must not make the coach ask whether 175 or 180 is
+    correct after the user edits the profile to 175.
+    """
+    if profile is None:
+        return False
+    text = f"{memory_key} {content}".lower()
+    numbers = [
+        float(value)
+        for value in _BODY_NUMBER_RE.findall(content)
+        if value
+    ]
+    if not numbers:
+        return False
+    if (
+        profile.height_cm
+        and ("height" in text or "身高" in text)
+        and all(
+            abs(value - float(profile.height_cm)) > 0.5
+            for value in numbers
+        )
+    ):
+        return True
+    return bool(
+        profile.weight_kg
+        and ("weight" in text or "体重" in text)
+        and all(
+            abs(value - float(profile.weight_kg)) > 0.5
+            for value in numbers
+        )
+    )
+
+
 def list_memories(db: Session, user_id: str, limit: int = 20) -> list[AIMemory]:
     limit = max(1, min(50, int(limit)))
+    profile = db.get(Profile, user_id)
     rows = list(
         db.execute(
             select(AIMemory)
@@ -156,6 +200,11 @@ def list_memories(db: Session, user_id: str, limit: int = 20) -> list[AIMemory]:
         item
         for item in rows
         if not is_pending_action_fact(item.kind, item.content)
+        and not memory_conflicts_with_profile(
+            profile,
+            item.memory_key,
+            item.content,
+        )
     ][:limit]
 
 

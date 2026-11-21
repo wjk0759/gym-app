@@ -46,7 +46,10 @@ from ..services.coach_control.state import (
     serialize_pending,
     serialize_session,
 )
-from ..services.memory import is_pending_action_fact
+from ..services.memory import (
+    is_pending_action_fact,
+    memory_conflicts_with_profile,
+)
 from ..services.rate_limit import enforce as enforce_rate_limit
 from ..services.safety import assess_safety
 
@@ -678,6 +681,12 @@ def coach_memories(user_id: CurrentUser, db: DBSession):
         if item.kind == "goal":
             continue
         if is_pending_action_fact(item.kind, item.content):
+            continue
+        if memory_conflicts_with_profile(
+            profile,
+            item.memory_key,
+            item.content,
+        ):
             continue
         if item.kind == "injury" and profile is not None and not profile.injuries:
             continue

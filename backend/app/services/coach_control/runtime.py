@@ -879,7 +879,17 @@ def _looks_like_progression_question(message: str) -> bool:
 
 
 def _looks_like_profile_update(message: str) -> bool:
-    if re.search(r"怎么|如何|为什么|吗|？|\?", message):
+    if re.search(
+        r"怎么|如何|为什么|吗|多少|多高|多重|多大|几|是什么|是多少|"
+        r"算一下|算算|计算|BMI|bmi|？|\?",
+        message,
+    ):
+        return False
+    # A bare profile field is a read question, not an instruction to edit it.
+    if re.fullmatch(
+        r"(?:我的|我)?(?:身高|体重|年龄|性别|昵称|名字)",
+        message.strip(),
+    ):
         return False
     if re.search(r"目标|体重|体脂|腰围|减脂|增肌|计划", message) and not re.search(
         r"身高|昵称|叫我|性别|女生|男生",

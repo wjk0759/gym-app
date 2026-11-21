@@ -63,3 +63,28 @@ def test_punctuation_only_turn_does_not_call_the_memory_model(monkeypatch):
 
     assert result == []
     assert called is False
+
+
+def test_conflicting_body_memory_is_detected():
+    profile = SimpleNamespace(height_cm=175, weight_kg=72)
+
+    assert memory.memory_conflicts_with_profile(
+        profile,
+        "height_cm",
+        "身高 180cm",
+    )
+    assert not memory.memory_conflicts_with_profile(
+        profile,
+        "height_cm",
+        "身高 175cm",
+    )
+    assert memory.memory_conflicts_with_profile(
+        profile,
+        "weight_kg",
+        "体重 80kg",
+    )
+    assert not memory.memory_conflicts_with_profile(
+        profile,
+        "weight_kg",
+        "体重 72kg",
+    )
