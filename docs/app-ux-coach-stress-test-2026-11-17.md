@@ -2002,3 +2002,84 @@ return summary + "\n" + "\n".join(f"? {line}" for line in wins)
 - 本轮不部署：iOS 真机仍 `7d03219`，新 iOS 源码未安装；生产后端 `b5494c6`，`/health/ready` 200。
 - 训练页内嵌教练 sheet 已编译，但真机交互（快捷问题、RPE 更新、sheet 共存）未验收。
 - N38/N39/N40 为 P2，修完再安装 Wu-Tang；N41 一起收口。
+
+## 四十三、2026-11-21 `58c8335` 复测：N41 修复，N38/N39/N40 仍 P2
+
+- 环境：生产后端 `58c8335`（`cc18ebf` + 主动教练分页；教练路由代码未变）；iOS 源码 `58c8335`，真机仍 `7d03219`；账号 `macqa_coach`；真实 Mon/Wed/Fri 3 练计划 + `app_context`（today 2026-11-21）。
+- iOS：`xcodegen generate` + clean `xcodebuild test`；iPhone 17 全量 **151/151**（144 单测 + 7 UI），iPhone SE 3 UI **7/7**；编译通过，未安装新包。
+- 结论：N41 已修，动作/器械解释通过；N38/N39/N40 仍为 P2，本轮不部署。
+
+### N41 已修
+
+```text
+接下来30天都在外地，训练怎么办
+→ training.life_event, pending=None
+→ 说明跨度 30 天，让把范围缩小到一周内
+
+接下来30天都在外地，都跳过
+→ 同样要求缩小范围，不再说“直接说都跳过”
+```
+
+### N34/N35/N36 继续通过
+
+- `下周一到周三出差` → `coach.batch`，2 个 reschedule：11/23→11/26、11/25→11/28。
+- `接下来30天都在外地，训练怎么办` → 说明跨度，无 pending。
+- `每天10点提醒我喝水和睡觉` → hydration + sleep 两项，均 10:00。
+
+### 动作/器械解释通过（新）
+
+```text
+深蹲怎么做
+→ coach.answer：站距、膝盖方向、下蹲深度；无 pending
+
+坐姿划船机怎么用
+→ coach.answer：座椅/把手高度、肩胛启动、轻重量试一组；无 pending
+```
+
+active_workout `下一组怎么练` 仍按 RPE 9.5 降重，无 pending。
+
+### 回归通过
+
+- N29 上周吃了什么、N30 加一组、N31 why、N33 伤病。
+- 主动教练开关：`/sync` 读取 `proactive_enabled=true`；POST false 后再读 false；POST true 恢复 true。iOS 开关和云同步编译通过，真机与次日扫描未验证。
+
+### N38 P2 仍在：周安排每日行是字面 `?`
+
+`runtime.py` `_week_reply` 仍是：
+
+```python
+summary = str(payload.get("summary") or "????????????")
+return summary + "\n" + "\n".join(f"? {line}" for line in wins)
+```
+
+实际输出：
+
+```text
+本周（11-16–11-22）计划 3 练，已完成 0 次。
+? 周一 11月16日：全身 A（待训练）
+? 周三 11月18日：全身 B（待训练）
+? 周五 11月20日：全身 C（待训练）
+```
+
+### N39 P2 仍在：第 2 周+不列每日
+
+```text
+第二周每天练什么 → training.preview_next → “下一练是周一（11月23日）：全身 A。”
+```
+
+`training_week.resolve` 支持 `week_index`，但 `_looks_like_week_schedule` 仍只匹配 `下周|本周|这周|一周|上周`；需要加 `第\s*[一二三四五六七八1-8]\s*周`。
+
+### N40 P2 仍在：多习惯不同时间被合并
+
+```text
+每天10点提醒我喝水，晚上10点提醒我睡觉
+→ reminder_items: hydration 10:00 + sleep 10:00
+```
+
+睡眠时间仍被静默改成 10:00。需要按 kind 分别解析时间，或直接追问每个提醒的时间。
+
+### 部署状态
+
+- 本轮不部署：iOS 真机仍 `7d03219`，新 iOS 源码未安装；生产后端 `58c8335`，`/health/ready` 200。
+- 训练页内嵌教练 sheet、并发保护、主聊天追加、主动教练开关均已编译，但真机交互/通知未验收。
+- N38/N39/N40 修完后再安装 Wu-Tang。
