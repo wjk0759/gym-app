@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
@@ -26,7 +27,6 @@ from ...models import (
     Program,
     SetLog,
     WorkoutSession,
-    utcnow,
 )
 from ..queries import active_goal
 
@@ -38,17 +38,72 @@ def _as_utc(value: datetime) -> datetime:
     return value.astimezone(timezone.utc)
 
 
-def _days_from_message(message: str, default: int) -> int:
-    """Use a small, predictable window instead of asking the model to infer one."""
-    if any(word in message for word in ("上周", "本周", "这周")):
-        return 7
-    if any(word in message for word in ("上个月", "本月", "这个月", "30天")):
-        return 30
+def _as_local(value: datetime) -> datetime:
+    """Render stored UTC timestamps in the user's China local time."""
+    return _as_utc(value).astimezone(CHINA_TZ)
+
+
+CHINA_TZ = timezone(timedelta(hours=8))
+
+
+@dataclass(frozen=True)
+class _Window:
+    """A half-open local-time window; labels are safe to show to the user."""
+
+    start: datetime
+    end: datetime
+    label: str
+
+
+def _window_for(message: str, default_days: int) -> _Window:
+    """Resolve "上周 / 本周 / 上个月 / 本月" as calendar windows.
+
+    Treating 上周 as the last seven days silently changes the answer when the
+    user asks on a Monday or after a skipped week. Calendar boundaries match
+    what a Chinese user means by those words.
+    """
+    now = datetime.now(CHINA_TZ)
+    monday = (now - timedelta(days=now.weekday())).replace(
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+    if "上周" in message:
+        return _Window(monday - timedelta(days=7), monday, "上周")
+    if any(word in message for word in ("本周", "这周")):
+        return _Window(monday, now, "本周")
+    if "上个月" in message:
+        month_start = now.replace(
+            day=1,
+            hour=0,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
+        previous_start = (month_start - timedelta(days=1)).replace(
+            day=1,
+            hour=0,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
+        return _Window(previous_start, month_start, "上个月")
+    if any(word in message for word in ("本月", "这个月")):
+        month_start = now.replace(
+            day=1,
+            hour=0,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
+        return _Window(month_start, now, "本月")
+    days = default_days
     if any(word in message for word in ("三个月", "90天", "3个月")):
-        return 90
-    if "半年" in message:
-        return 180
-    return default
+        days = 90
+    elif "半年" in message:
+        days = 180
+    return _Window(now - timedelta(days=days), now, f"最近 {days} 天")
 
 
 def _fmt_kg(value: float | None) -> str:
@@ -82,14 +137,16 @@ def _matching_exercise(db: Session, message: str) -> tuple[str, str] | None:
 
 def _training_summary(db: Session, user_id: str, message: str) -> str:
     """Summarize recent sessions, volume and an optional exercise focus."""
-    days = _days_from_message(message, 28)
-    since = utcnow() - timedelta(days=days)
+    window = _window_for(message, 28)
+    start = window.start.astimezone(timezone.utc)
+    end = window.end.astimezone(timezone.utc)
     sessions = (
         db.execute(
             select(WorkoutSession)
             .where(
                 WorkoutSession.user_id == user_id,
-                WorkoutSession.started_at >= since,
+                WorkoutSession.started_at >= start,
+                WorkoutSession.started_at < end,
             )
             .order_by(WorkoutSession.started_at.desc())
         )
@@ -97,7 +154,7 @@ def _training_summary(db: Session, user_id: str, message: str) -> str:
         .all()
     )
     if not sessions:
-        return f"训练（最近 {days} 天）：没有训练记录。"
+        return f"训练（{window.label}）：没有训练记录。"
 
     session_ids = [item.id for item in sessions]
     sets = (
@@ -113,13 +170,13 @@ def _training_summary(db: Session, user_id: str, message: str) -> str:
     )
     sets_by_session = Counter(item.session_id for item in sets)
     recent = "；".join(
-        f"{_as_utc(item.started_at).strftime('%m/%d')} "
+        f"{_as_local(item.started_at).strftime('%m/%d')} "
         f"{item.duration_min or '—'} 分钟 "
         f"{sets_by_session.get(item.id, 0)} 组"
         for item in sessions[:3]
     )
     lines = [
-        f"训练（最近 {days} 天）：{len(sessions)} 次，"
+        f"训练（{window.label}）：{len(sessions)} 次，"
         f"{len(completed)} 组，总容量 {volume:.0f} kg。",
         f"最近训练：{recent}。",
     ]
@@ -156,14 +213,16 @@ def _training_summary(db: Session, user_id: str, message: str) -> str:
 
 def _nutrition_summary(db: Session, user_id: str, message: str) -> str:
     """Summarize food-log totals; never estimate missing macros here."""
-    days = _days_from_message(message, 7)
-    since = utcnow() - timedelta(days=days)
+    window = _window_for(message, 7)
+    start = window.start.astimezone(timezone.utc)
+    end = window.end.astimezone(timezone.utc)
     logs = (
         db.execute(
             select(FoodLog)
             .where(
                 FoodLog.user_id == user_id,
-                FoodLog.logged_at >= since,
+                FoodLog.logged_at >= start,
+                FoodLog.logged_at < end,
             )
             .order_by(FoodLog.logged_at.desc())
         )
@@ -171,19 +230,19 @@ def _nutrition_summary(db: Session, user_id: str, message: str) -> str:
         .all()
     )
     if not logs:
-        return f"饮食（最近 {days} 天）：没有饮食记录。"
+        return f"饮食（{window.label}）：没有饮食记录。"
 
     total_kcal = sum(float(item.kcal or 0) for item in logs)
     total_protein = sum(float(item.protein or 0) for item in logs)
     total_carbs = sum(float(item.carbs or 0) for item in logs)
     total_fat = sum(float(item.fat or 0) for item in logs)
-    logged_days = len({_as_utc(item.logged_at).date() for item in logs})
+    logged_days = len({_as_local(item.logged_at).date() for item in logs})
     recent = "、".join(
-        f"{_as_utc(item.logged_at).strftime('%m/%d')} {item.food_name}"
+        f"{_as_local(item.logged_at).strftime('%m/%d')} {item.food_name}"
         for item in logs[:3]
     )
     return (
-        f"饮食（最近 {days} 天）：记录 {logged_days} 天 / {len(logs)} 条，"
+        f"饮食（{window.label}）：记录 {logged_days} 天 / {len(logs)} 条，"
         f"热量 {total_kcal:.0f} kcal，蛋白质 {total_protein:.0f} g，"
         f"碳水 {total_carbs:.0f} g，脂肪 {total_fat:.0f} g。"
         f"\n最近记录：{recent}。"
@@ -205,10 +264,16 @@ def _plan_summary(program: Program | None) -> str:
     for item in first_week:
         weekday = "一二三四五六日"[max(0, min(6, item.weekday - 1))]
         focus = "、".join(item.focus or [])
+        exercises = sorted(item.exercises, key=lambda row: row.order_index)
+        names = "、".join(
+            (row.exercise.name_zh if row.exercise else row.exercise_slug)
+            for row in exercises[:5]
+        )
         day_lines.append(
             f"周{weekday} {item.title}"
             + (f"（{focus}）" if focus else "")
             + f"，{len(item.exercises)} 个动作"
+            + (f"：{names}" if names else "")
         )
     return (
         f"计划：{program.title}；{program.weeks} 周，"
@@ -249,9 +314,11 @@ def _profile_summary(db: Session, profile: Profile) -> str:
     goal = active_goal(db, profile.user_id)
     if goal is None:
         missing.append("训练目标")
+    injuries = [str(item) for item in (profile.injuries or []) if str(item).strip()]
+    injury_line = "伤病记录：" + ("、".join(injuries) if injuries else "无")
     if not missing:
-        return "档案：基础档案已完整。"
-    return "档案：还缺 " + "、".join(missing) + "。"
+        return "档案：基础档案已完整。\n" + injury_line
+    return "档案：还缺 " + "、".join(missing) + "。\n" + injury_line
 
 
 def build_readonly_context(
@@ -300,6 +367,8 @@ def build_readonly_context(
     if not sections:
         return None
     return (
-        "以下是服务端实时查询到的事实，只能基于这些事实回答，不要编造：\n"
+        "以下是服务端实时查询到的事实，只能基于这些事实回答，不要编造；"
+        "事实里没有的伤病、疼痛、体态或动作理由不要推断，"
+        "不要使用“治疗/矫正/康复”等医疗结论：\n"
         + "\n".join(sections)
     )

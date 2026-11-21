@@ -21,7 +21,7 @@ from app.models import (
     WorkoutSession,
 )
 from app.services.coach_control.capabilities import coach_answer
-from app.services.coach_control.insights import build_readonly_context
+from app.services.coach_control.insights import _window_for, build_readonly_context
 
 
 @pytest.fixture()
@@ -216,6 +216,15 @@ def test_profile_question_lists_missing_fields(db, seeded):
 
     assert context is not None
     assert "训练目标" in context
+    assert "伤病记录：无" in context
+
+
+def test_last_week_is_a_calendar_window():
+    window = _window_for("我上周练了几次", 7)
+
+    assert window.label == "上周"
+    assert window.end.weekday() == 0
+    assert (window.end - window.start).days == 7
 
 
 def test_coach_answer_injects_ledger_facts(db, seeded, monkeypatch):
