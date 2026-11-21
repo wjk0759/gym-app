@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`6dca8bd0`（AI 教练阶段 3 代码收口 + 硬化：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时/开关/分页、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练、多习惯提醒（含每项独立时间展示）、并发保护和主动教练开关但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V45**；后端 **747 passed**、QA **76/76**、Ruff 通过；**真实 LLM coach-control eval 13/13（deepseek-flash）**；**Mac 复测 64dbb5e：N38/N39/N40/N41 通过，N34/N35/N36/动作器械解释/进度延迟回归通过；新增 N44 身高只读问答误路由 P2 + N45 记忆身高冲突 P3；iOS 151/151 + SE 7/7；不部署**；**Windows c7f432f/f5a53c01/a554d564/4ec5311c/68a8c549/6dca8bd0：N38/N39/N40 后端已修，进度问答延迟降到 2.1–2.5s，高负荷 readiness/进阶上下行确认+撤销已生产验收，写链路通过；iOS N40 卡片文案已 Mac 构建通过**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`247fe8c0`（AI 教练阶段 3 代码收口 + 硬化：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时/开关/分页、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练、多习惯提醒（含每项独立时间展示）、并发保护和主动教练开关但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V45**；后端 **757 passed**、QA **76/76**、Ruff 通过；**真实 LLM coach-control eval 13/13（deepseek-flash）**；**Mac 复测 64dbb5e：N38/N39/N40/N41 通过，N34/N35/N36/动作器械解释/进度延迟回归通过；新增 N44 身高只读误路由 P2 + N45 记忆身高冲突 P3；iOS 151/151 + SE 7/7；不部署**；**Windows c7f432f…247fe8c0：N38/N39/N40 已修，N44 身高/BMI 只读与档案值已修，N45 冲突身高/体重记忆已过滤，plan_version/体重 fallback/进阶取整补齐；高负荷 readiness/进阶上下行与写链路生产验收通过；iOS N40 卡片 Mac 编译通过**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -57,7 +57,7 @@
 
 ### 2026-11-21 · Windows（阶段 3 生产写链路 + 高负荷 readiness + N38/N40 修复）
 
-- 提交：`c7f432f`、`f5a53c01`、`4ec5311c`、`68a8c549`、`6dca8bd0`，已推 `develop`；生产 API 已重建，`/health/ready` 200。
+- 提交：`c7f432f`、`f5a53c01`、`4ec5311c`、`68a8c549`、`6dca8bd0`、`96886221`、`19c9dd07`，已推 `develop`；生产 API 已重建，`/health/ready` 200。
 - 完整 `/coach/turns` 生产冒烟（`test_reviewer`，真实 LLM）：
   - 只读问答 9 条全部 `coach.answer`（除周安排）：上周训练 0 次、最近饮食 0 条、readiness no_data、计划解释、档案缺失、伤病“无记录”、深蹲要点；延迟 **0.95–2.7s**。
   - “下周哑铃交替弯举加多少重量”两次分别 **9.5s / 14.9s**，命中 `coach_intent_router` 后才回答；内容正确（无记录先保持），但延迟偏高，后续可只看是否要跳过语义路由。
@@ -78,6 +78,12 @@
   - 运行：`cd backend && .\.venv\Scripts\python.exe -m eval.coach_control_quality`（需要真实 `LLM_API_KEY`）。
   - 当前 `deepseek-flash` 基线 **13/13**，延迟 11ms–4.1s；输出 `backend/eval/baselines/coach_control_quality.json`。
   - 这是控制面 eval，和原来的 `/agent` 银行 `eval.runner` 分开。
+- 代码 review 后补的完善：
+  - **iOS plan metadata**：iOS `app_context.plan` 不带 `version`，生活事件卡会得到 `plan_version=null`。`with_plan_context` 现在从服务端补 `version/start_date/weeks`；用 iOS 风格 app_context 生产复测，生活事件卡 `plan_version=16`。
+  - **档案体重 fallback**：`profile.weight_kg` 为空但最近有 `body_metrics` 体重时，不再回答“缺体重”；伤病代码映射中文（膝部/腰背/肩部/肘部/手腕/脚踝/胸部）。
+  - **记忆短文本**：自动抽取的标点过滤从“至少 4 个字符”改为“至少一个有效字符”，不再误伤“我腰疼”这类短事实；纯标点仍跳过。
+  - **进阶取整 no-op**：最小杠铃片/哑铃档位大于 2.5%/5% 时，不再生成“30kg→30kg ↑”或“8kg→8kg ↓”的假变化，改为 hold 并说明最小档位；新增 30kg 杠铃、8kg 哑铃测试。
+  - 复跑 eval：仍 **13/13**；后端 **752 passed**。
 - 本轮修复：
   - **跨周计划**：`current_plan_context` 只带当前周，导致“下周/第二周”看不到训练。新增 `plan_days_with_dates()`，从服务端 `Program/ProgramDay/PlanDayState` 计算完整日期；`life_events` 和 `training.week_schedule` 改为优先读服务端计划，客户端快照只做兜底。
   - **第 X 周路由**：`_looks_like_week_schedule` 支持“第一周/第二周/第八周”，不再只认“一周”。
@@ -88,7 +94,7 @@
   - **N40 iOS 卡片**：`reminderPendingText` 原来只取第一项时间；现在多习惯时间不同时逐项显示“喝水 10:00、睡眠 22:00”。iOS 未在 Windows 构建。
   - **进度问答延迟**：`_should_try_semantic_route` 不再把含“多少/什么/哪个/哪/几组/几次”的只读问题送进能力路由模型；生产“下周哑铃交替弯举加多少重量”从 **9.5–14.9s** 降到 **2.1–2.5s**，确定性写解析仍在前面执行。
 - 验证：
-  - 后端 **747 passed**、QA **76/76**、Ruff 通过。
+  - 后端 **752 passed**、QA **76/76**、Ruff 通过。
   - 生产复测：标点-only 连续两轮，`/coach/memories` 的 `updated_at` 不再变化；第二周回复 `•`；N40 receipt 正确；进度问答 2.1s / 2.5s；高负荷 `ACWR 3.33` readiness 与进阶上下行确认/撤销均通过；真实 LLM control-plane eval **13/13**。
   - 测试账号清理：撤销 `body.log_weight` 会 `recompute_profile_cache` 把 profile 体重清空；已恢复 `test_reviewer` 的 `weight_kg=70.1`、`body_fat_pct=18.0`。旧记忆 `preferred_bench_press` 仍在，属于测试账号历史数据，不是新写入。
 - 仍未验证：
