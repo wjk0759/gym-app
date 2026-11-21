@@ -209,6 +209,11 @@ def test_plan_question_describes_week_structure(db, seeded):
     assert "4 周增肌计划" in context
     assert "每周 3 练" in context
     assert "全身 A" in context
+    # Template weekdays are facts; actual dates live on the client board.
+    assert "训练日模板：周一、周三、周五" in context
+    assert "实际日期以 App 日程为准" in context
+    # Internal taxonomy codes must not leak into the prompt.
+    assert "chest" not in context
 
 
 def test_profile_question_lists_missing_fields(db, seeded):
@@ -217,6 +222,20 @@ def test_profile_question_lists_missing_fields(db, seeded):
     assert context is not None
     assert "训练目标" in context
     assert "伤病记录：无" in context
+
+
+def test_complete_profile_is_reported_as_complete(db, seeded):
+    from app.models import Goal
+
+    db.add(Goal(user_id="user-1", type="build_muscle", status="active"))
+    db.commit()
+
+    context = build_readonly_context(db, "user-1", "帮我看看档案还缺什么", seeded)
+
+    assert context is not None
+    assert "基础档案已完整，没有缺失项" in context
+    assert "已填器械：哑铃" in context
+    assert "每周训练 3 天" in context
 
 
 def test_last_week_is_a_calendar_window():
@@ -249,3 +268,47 @@ def test_coach_answer_injects_ledger_facts(db, seeded, monkeypatch):
     assert result["reply"] == "ok"
     assert captured["context"] is not None
     assert "训练（最近 28 天）：2 次" in captured["context"]
+
+
+def test_coach_answer_removes_invented_injury_claims(db, seeded, monkeypatch):
+    async def fake_reply(db, profile, program, history, message, **kwargs):
+        return {
+            "reply": (
+                "腿日用哑铃是照顾你腰的旧伤。"
+                "肩日动作能矫正肱骨前移。"
+                "这个安排对你腰更友好。"
+                "整体是五分化，周一练胸。"
+            ),
+            "safety_flag": None,
+        }
+
+    monkeypatch.setattr(coach_answer, "coach_reply", fake_reply)
+    profile = db.get(Profile, "user-1")
+    result = asyncio.run(
+        coach_answer.resolve(db, profile, seeded, [], "为什么这样安排计划")
+    )
+
+    assert "照顾你腰的旧伤" not in result["reply"]
+    assert "肱骨前移" not in result["reply"]
+    assert "对你腰更友好" not in result["reply"]
+    assert "五分化" in result["reply"]
+    assert "没有你的伤病或体态记录" in result["reply"]
+
+
+def test_coach_answer_keeps_injury_explanation_when_recorded(db, seeded, monkeypatch):
+    async def fake_reply(db, profile, program, history, message, **kwargs):
+        return {
+            "reply": "腿日不用杠铃深蹲，是照顾你记录过的腰椎间盘问题。",
+            "safety_flag": None,
+        }
+
+    monkeypatch.setattr(coach_answer, "coach_reply", fake_reply)
+    profile = db.get(Profile, "user-1")
+    profile.injuries = ["腰椎间盘突出"]
+    db.commit()
+    result = asyncio.run(
+        coach_answer.resolve(db, profile, seeded, [], "为什么这样安排计划")
+    )
+
+    assert "腰椎间盘" in result["reply"]
+    assert "没有你的伤病" not in result["reply"]

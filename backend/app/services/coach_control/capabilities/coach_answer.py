@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from ....models import Profile, Program
 from ...coach import coach_reply
+from ...reply_guard import strip_unsupported_injury_claims
 from ..insights import build_readonly_context
 from ..registry import Capability, register
 
@@ -70,7 +71,7 @@ async def resolve(
                 + str(equipment.get("name"))
                 + (f"。{detail}" if detail else "")
             )
-    return await coach_reply(
+    result = await coach_reply(
         db,
         profile,
         program,
@@ -79,3 +80,18 @@ async def resolve(
         context="\n\n".join(context_parts) or None,
         memory_book=memory_book,
     )
+    # Free-chat is the only capability that returns a long natural-language
+    # answer, so it is also the place most likely to invent an old injury while
+    # explaining plan choices. Deterministic cleanup runs after the model and
+    # before the text is persisted by the control plane.
+    if not result.get("safety_flag"):
+        result = {
+            **result,
+            "reply": strip_unsupported_injury_claims(
+                str(result.get("reply") or ""),
+                has_injury_record=bool(
+                    [item for item in (profile.injuries or []) if str(item).strip()]
+                ),
+            ),
+        }
+    return result

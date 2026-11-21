@@ -28,6 +28,7 @@ from ...models import (
     SetLog,
     WorkoutSession,
 )
+from ..lexicon import EQUIPMENT_LABELS
 from ..queries import active_goal
 
 
@@ -263,22 +264,31 @@ def _plan_summary(program: Program | None) -> str:
     day_lines = []
     for item in first_week:
         weekday = "一二三四五六日"[max(0, min(6, item.weekday - 1))]
-        focus = "、".join(item.focus or [])
         exercises = sorted(item.exercises, key=lambda row: row.order_index)
         names = "、".join(
             (row.exercise.name_zh if row.exercise else row.exercise_slug)
             for row in exercises[:5]
         )
+        # Focus codes are internal taxonomy values (``chest``/``glutes``). They
+        # leak English into the prompt and invite the model to over-explain, so
+        # only the day title and real exercise names are exposed.
         day_lines.append(
             f"周{weekday} {item.title}"
-            + (f"（{focus}）" if focus else "")
             + f"，{len(item.exercises)} 个动作"
             + (f"：{names}" if names else "")
         )
+    template_days = "、".join(
+        f"周{'一二三四五六日'[max(0, min(6, item.weekday - 1))]}" for item in first_week
+    )
     return (
         f"计划：{program.title}；{program.weeks} 周，"
         f"每周 {len(first_week)} 练；开始日期 {program.start_date}。"
+        f"\n训练日模板：{template_days}。"
         f"\n第 1 周：{'；'.join(day_lines)}。"
+        # Reschedules live on the client board, not in the program rows. Telling
+        # the model this prevents it from presenting the template weekdays as
+        # the user's actual training dates.
+        "\n说明：以上是计划模板的周几；用户可能在 App 里改期，实际日期以 App 日程为准。"
     )
 
 
@@ -301,7 +311,12 @@ def _body_summary(db: Session, user_id: str) -> str:
 
 
 def _profile_summary(db: Session, profile: Profile) -> str:
-    """List missing onboarding fields without treating optional data as required."""
+    """List missing onboarding fields without treating optional data as required.
+
+    Equipment and schedule preferences are part of the onboarding snapshot, so
+    they are stated explicitly. Otherwise a model asked "what is missing" tends
+    to invent gaps such as equipment or sleep when the real profile is complete.
+    """
     missing: list[str] = []
     if profile.birth_date is None:
         missing.append("出生日期")
@@ -316,9 +331,32 @@ def _profile_summary(db: Session, profile: Profile) -> str:
         missing.append("训练目标")
     injuries = [str(item) for item in (profile.injuries or []) if str(item).strip()]
     injury_line = "伤病记录：" + ("、".join(injuries) if injuries else "无")
+    equipment = [str(item) for item in (profile.equipment or []) if str(item).strip()]
+    equipment_line = "已填器械：" + (
+        "、".join(EQUIPMENT_LABELS.get(item, item) for item in equipment)
+        if equipment
+        else "未填"
+    )
+    schedule_line = (
+        f"每周训练 {profile.weekly_days} 天，每次 {profile.session_minutes} 分钟"
+    )
     if not missing:
-        return "档案：基础档案已完整。\n" + injury_line
-    return "档案：还缺 " + "、".join(missing) + "。\n" + injury_line
+        return (
+            "档案：基础档案已完整，没有缺失项。\n"
+            + equipment_line
+            + "\n"
+            + schedule_line
+            + "\n"
+            + injury_line
+        )
+    return (
+        "档案：还缺 " + "、".join(missing) + "。\n"
+        + equipment_line
+        + "\n"
+        + schedule_line
+        + "\n"
+        + injury_line
+    )
 
 
 def build_readonly_context(
@@ -369,6 +407,11 @@ def build_readonly_context(
     return (
         "以下是服务端实时查询到的事实，只能基于这些事实回答，不要编造；"
         "事实里没有的伤病、疼痛、体态或动作理由不要推断，"
-        "不要使用“治疗/矫正/康复”等医疗结论：\n"
+        "不要使用“治疗/矫正/康复”等医疗结论。"
+        "问档案时只列事实里写出的缺失项；事实说已完整就回答完整，"
+        "不要把已填项或未列出的项（如睡眠、饮食）说成缺失。"
+        "解释计划时只依据给出的模板周几、每日主题和动作，"
+        "不要把两个不同的训练日说成同一天，也不要猜用户实际哪天练；"
+        "不要声称用户以前说过或偏好某事，除非对话历史、记忆或这些事实里明确有。\n"
         + "\n".join(sections)
     )

@@ -99,6 +99,65 @@ _DIAGNOSIS_REPLY = (
     "如果疼痛、肿胀或活动受限明显，找医生或康复师做检查。"
 )
 
+# The model likes to explain exercise selection with an invented old injury or
+# posture problem ("照顾你腰的旧伤", "矫正肱骨前移"). When the profile has no
+# injury record, those claims are unsafe even if they sound supportive. This
+# pattern is deliberately specific so ordinary coaching language is untouched.
+_UNSUPPORTED_INJURY_RE = re.compile(
+    r"(?:旧伤|老伤|腰伤|膝伤|肩伤|腰椎间盘|椎间盘|"
+    r"骨盆前倾|肱骨前移|圆肩|高低肩|脊柱侧弯|"
+    r"膝内扣|足弓塌陷|X\s*型腿|O\s*型腿|代偿|"
+    r"治疗|矫正|康复(?!师))"
+)
+# Softer version of the same problem: the model avoids the word "伤" but still
+# tells the user their back/knee/shoulder will feel better. That is still a
+# body-specific claim the profile cannot support.
+_USER_BODY_CLAIM_RE = re.compile(
+    r"(?:对你|给你的|你的).{0,6}"
+    r"(?:腰|腰椎|膝盖|膝关节|肩|肩关节|脊柱|体态)"
+    r".{0,6}(?:友好|压力|负担|舒服|不适)"
+)
+_INJURY_CLAIM_FOOTER = (
+    "补充一句：我这边没有你的伤病或体态记录，"
+    "不能按旧伤、体态问题或“治疗/矫正”来解释动作。"
+)
+
+
+def strip_unsupported_injury_claims(
+    reply: str,
+    *,
+    has_injury_record: bool,
+) -> str:
+    """Remove sentences that invent an injury or posture diagnosis.
+
+    Prompt instructions alone did not stop this in production smoke: the model
+    still wrote "照顾你腰的旧伤" for a profile whose ``injuries`` list was
+    empty. The guard is deterministic and sentence-scoped, so the useful parts
+    of a plan explanation survive while the medical claim is removed.
+    """
+    text = (reply or "").strip()
+    if not text or has_injury_record:
+        return reply
+    if not (
+        _UNSUPPORTED_INJURY_RE.search(text)
+        or _USER_BODY_CLAIM_RE.search(text)
+    ):
+        return reply
+
+    def unsupported(value: str) -> bool:
+        return bool(
+            _UNSUPPORTED_INJURY_RE.search(value)
+            or _USER_BODY_CLAIM_RE.search(value)
+        )
+
+    # Keep the sentence delimiter so the remaining text still reads naturally.
+    sentences = re.split(r"(?<=[。！？!?；;\n])", text)
+    kept = [item for item in sentences if item.strip() and not unsupported(item)]
+    body = "".join(kept).strip()
+    if not body:
+        return _INJURY_CLAIM_FOOTER
+    return body + "\n" + _INJURY_CLAIM_FOOTER
+
 
 def _window(text: str, match: re.Match[str]) -> str:
     before = text[max(0, match.start() - 8) : match.start()]
