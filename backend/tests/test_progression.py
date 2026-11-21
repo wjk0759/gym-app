@@ -21,7 +21,7 @@ from app.models import (
 )
 from app.services.coach_control import runtime
 from app.services.coach_control.insights import build_readonly_context
-from app.services.coach_control.progression import build_plan
+from app.services.coach_control.progression import build_plan, target_brief
 
 
 @pytest.fixture()
@@ -276,6 +276,8 @@ def test_bodyweight_progression_adds_reps_at_top_of_range(db):
     assert target["action"] == "up"
     assert target["kind"] == "reps"
     assert target["target_reps"] == "12-17"
+    assert "3 组" in target_brief(target)
+    assert "12-15→12-17 次" in target_brief(target)
 
 
 def test_bodyweight_progression_reduces_sets_when_rpe_is_high(db):
@@ -290,3 +292,4 @@ def test_bodyweight_progression_reduces_sets_when_rpe_is_high(db):
     assert target["action"] == "down"
     assert target["kind"] == "sets"
     assert target["target_sets"] == 2
+    assert "3→2 组" in target_brief(target)

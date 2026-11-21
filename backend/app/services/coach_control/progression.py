@@ -296,14 +296,18 @@ def _recommend(
 
 def target_brief(target: dict) -> str:
     if target.get("kind") == "reps":
+        sets = target.get("current_sets")
+        prefix = f"{sets} 组 " if sets else ""
         return (
-            f"{target['name']} {target.get('current_reps')}"
+            f"{target['name']} {prefix}{target.get('current_reps')}"
             f"→{target.get('target_reps')} 次"
         )
     if target.get("kind") == "sets":
+        reps = target.get("current_reps")
+        suffix = f"（{reps} 次）" if reps else ""
         return (
             f"{target['name']} {target.get('current_sets')}"
-            f"→{target.get('target_sets')} 组"
+            f"→{target.get('target_sets')} 组{suffix}"
         )
     return (
         f"{target['name']} {float(target['current_weight_kg']):g}"
