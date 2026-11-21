@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`ee2eab1e`（AI 教练阶段 3 代码收口 + 硬化：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时/开关/分页、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练、多习惯提醒（含每项独立时间展示）、并发保护和主动教练开关；**Mac 已 build/test 并安装 Wu-Tang**；`/health/ready` **200**；Flyway **V45**；后端 **762 passed**、QA **76/76**、Ruff 通过；**真实 LLM coach-control eval 13/13（deepseek-flash）**；**Mac API 复测 46e0ae3：N44/N45 通过，N38/N39/N40/N41/N34/N35/N36 回归通过；身高/BMI/体重/体脂/目标/年龄/频率只读问答正确；iOS 151/151 + SE 7/7；Release 已安装 Wu-Tang 并启动；无 P2，已部署；App 内 XCUITest 压力测试新增 N46/N47 P2 + N48/N49 P3**；**Windows ee2eab1e：N46 重复提问语气护栏、N47 “今天练什么”快捷入口、N48 计划周滚动锚点、N49 周卡 bullet 已修；此前 N38/N39/N40/N44/N45、plan_version/体重 fallback/进阶取整和高负荷 readiness/进阶上下行均已验收**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`ee2eab1e`（AI 教练阶段 3 代码收口 + 硬化：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时/开关/分页、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练、多习惯提醒（含每项独立时间展示）、并发保护和主动教练开关；**Mac 已 build/test 并安装 Wu-Tang**；`/health/ready` **200**；Flyway **V45**；后端 **762 passed**、QA **76/76**、Ruff 通过；**真实 LLM coach-control eval 13/13（deepseek-flash）**；**Mac 复测 ee2eab1 + App 内 XCUITest：N46/N47/N48/N49 通过，N44/N45/N34–N41/N29–N37 回归通过；iOS 151/151 + SE 7/7；Release 已安装 Wu-Tang 并启动；N50 偶发模型回显未复现，列为监控项**；**Windows ee2eab1e：N46 重复提问语气护栏、N47 “今天练什么”快捷入口、N48 计划周滚动锚点、N49 周卡 bullet 已修；此前 N38/N39/N40/N44/N45、plan_version/体重 fallback/进阶取整和高负荷 readiness/进阶上下行均已验收**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -35,6 +35,20 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-21 · macOS（ee2eab1 复测 + App 内 N46–N49 + 部署）
+
+- 环境：生产后端 `ee2eab1`；iOS 源码 `ee2eab1`；iPhone 17 模拟器真实登录 `macqa_coach` + 生产 API，App 内 XCUITest；真机 Wu-Tang 部署同源码。
+- **N46 通过**：同一会话连续问 3 次身高 → “175cm。”“175cm，记着呢。”“175cm。”，无“第三遍/测我/档案显示不对”。
+- **N47 通过**：快捷入口改为“今天练什么”，不再发“帮我安排今天的训练”；App 内点击后不再问“想加哪个部位”。休息日回复“今天没有安排训练”；P3：可再补一句下一练。
+- **N48 通过**：`第二周每天练什么` → “计划第 2 周（11-27–12-02）”，日期与 iOS 滚动锚点一致；`本周` 1 练 11/20 全身 C，`下周` 11/23/25/27 三次。文案已明确“计划第 X 周”。
+- **N49 通过**：周安排洞察卡每日行已用 `•`，App 内断言 `• 周五 11月27日` 通过。
+- **回归通过**：N44/N45、N34/N35/N36、N38/N39/N40/N41、N29/N30/N31/N33/N37、动作/器械解释、进度问答。
+- **N50 偶发模型回显（监控项）**：一次长 API 会话问“为什么这样安排计划”，回复夹带“用户问…答：…简短…end”和未发送过的“5 组”假设对话；重置会话后、10 轮新会话、App 内同一问题均未复现。不是本轮 iOS 改动引入，但建议加回复清洗（丢弃“用户问/答：/简短/end”类行、限制异常长回复）。
+- iOS：`xcodegen generate` + clean `xcodebuild test`；iPhone 17 全量 **151/151**（含 UI），iPhone SE 3 UI **7/7**。
+- 部署：`ios/scripts/build_phone_only.sh Wu-Tang` 成功；Release 构建、安装、启动均通过；bundle `com.wjk.fitai`，进程已确认在运行。
+- 仍为 P3/闭环缺口：休息日“今天练什么”可补下一练；多习惯本地通知实际排程未验收；训练页内嵌教练 sheet 未在 App 内走通；冷启动登录保持需签名构建/真机复核。
+- 生产后端 `ee2eab1`，`/health/ready` 200。
 
 ### 2026-11-21 · macOS（App 内 AI 教练压力测试：N46/N47 P2 + N48/N49 P3）
 
