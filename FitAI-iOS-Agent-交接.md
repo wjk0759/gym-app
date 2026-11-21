@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`b351c9a`（AI 教练 Release 1 + Release 2 + Release 3 readiness/自适应复盘/训练中 co-pilot/按动作进阶 + Mac P1 修复；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒和 active_workout 上下文但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **723 passed**、QA **76/76**、Ruff 通过；**N29/N30/N31/N32 已修，N33 仍 P2**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`22adfbc`（AI 教练 Release 1 + Release 2 + Release 3 readiness/自适应复盘/训练中 co-pilot/按动作进阶/主动教练定时；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒和 active_workout 上下文但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **726 passed**、QA **76/76**、Ruff 通过；**N29/N30/N31/N32 已修，N33 仍 P2**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -69,6 +69,31 @@
   - 不要把习惯提醒标识改成 `workout-*`；不要用关闭训练提醒去删 `habit-*`。
   - 不要声称习惯提醒跨设备同步。
 - 仍 BLOCKED：iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
+
+### 2026-11-21 · Windows（Release 3：主动教练定时调度）
+
+- 提交：`22adfbc`，已推 `develop`；生产 API 已重建，`/health/ready` 200。
+- 新增 `backend/app/services/coach_control/proactive.py`：
+  - 每天扫描活跃用户，每个用户一次最多生成一条收件箱提醒。
+  - 规则 1：readiness `high_risk` / `strained` → “恢复压力偏高/恢复窗口偏紧”。
+  - 规则 2：最近 3 天有计划训练但没有对应训练记录 → “有一次训练没完成”。
+  - recovery 冷却 7 天，training 冷却 3 天，避免每日刷屏。
+  - 计划日期按 `program.start_date` 旋转，和 iOS `PlanScheduleEngine` 一致；不再用日历周一硬算。
+- 调度入口：
+  - `POST /api/v1/coach/proactive/run`，需要 `X-Cron-Token`，token 在 `.env` 的 `PROACTIVE_CRON_TOKEN`；未配置返回 503。
+  - CLI：`docker compose exec -T api python -m app.services.coach_control.proactive`。
+- 生产已配置：
+  - `.env` 已写入 `PROACTIVE_CRON_TOKEN`。
+  - 服务器 crontab 已加 **每天 09:00（CST）** 执行 CLI，日志 `/var/log/fitai-proactive.log`。
+  - 首次手动调用扫描 16 人、创建 3 条训练提醒；随后 CLI 复跑 `created=0`，冷却生效。
+- 验证：后端 **726 passed**、QA **76/76**、Ruff 通过；新增 3 个 proactive 测试。
+- 注意：
+  - 目前是**应用内收件箱提醒**，不是 APNs 推送；Notifications V2 仍 BLOCKED。
+  - 计划日期锚点已同步到 `start_date` 旋转；progression 的日期标签也一并修正。
+- 需要 Mac：
+  - 构建 + 真机确认收件箱能刷新到 proactive 项，点 prompt 能进入教练。
+  - 确认测试账号/真实账号看到的内容不重复、不过期。
+- 仍 BLOCKED：APNs/Notifications V2、N33 话术、iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
 
 ### 2026-11-21 · Windows（Release 3：按动作的下周进阶）
 
