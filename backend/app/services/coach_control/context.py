@@ -14,7 +14,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ...models import CoachActionRecord, DomainEvent, utcnow
+from ...models import CoachActionRecord, DomainEvent, Program, utcnow
 from ..coach_context import build_coach_context
 
 CONTEXT_VERSION = "coach-control-v1"
@@ -83,6 +83,26 @@ def with_plan_context(
 ) -> dict:
     context = dict(app_context or {})
     if isinstance(context.get("plan"), dict):
+        # iOS sends the full plan days but not the server version. Fill in
+        # server-owned metadata so life-event/plan-edit cards carry a real
+        # plan_version instead of null.
+        plan = dict(context["plan"])
+        program_id = str(plan.get("id") or "")
+        if program_id:
+            program = db.execute(
+                select(Program).where(
+                    Program.id == program_id,
+                    Program.user_id == user_id,
+                )
+            ).scalar_one_or_none()
+            if program is not None:
+                if not plan.get("version"):
+                    plan["version"] = program.version
+                if not plan.get("start_date") and program.start_date:
+                    plan["start_date"] = program.start_date.isoformat()
+                if not plan.get("weeks"):
+                    plan["weeks"] = program.weeks
+                context["plan"] = plan
         return context
     try:
         base = build_coach_context(db, user_id, app_context=context)

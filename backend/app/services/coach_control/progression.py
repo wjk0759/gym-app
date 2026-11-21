@@ -64,8 +64,12 @@ def _rep_range(value: str | None) -> tuple[int, int]:
     return 8, 12
 
 
+def _step(equipment: str | None) -> float:
+    return 2.5 if equipment in {"barbell", "machine", "cable"} else 1.0
+
+
 def _round_load(value: float, equipment: str | None) -> float:
-    step = 2.5 if equipment in {"barbell", "machine", "cable"} else 1.0
+    step = _step(equipment)
     return round(value / step) * step
 
 
@@ -268,24 +272,40 @@ def _recommend(
         return base
     if (avg_rpe is not None and avg_rpe >= 9) or min(reps) < bottom:
         target = _round_load(float(current) * DOWN_RATE, equipment)
-        base.update(
-            {
-                "target_weight_kg": target,
-                "action": "down",
-                "reason": (
-                    f"上一组 RPE {avg_rpe}" if avg_rpe is not None else "次数低于目标"
-                ),
-            }
-        )
+        if target >= float(current):
+            # The smallest available plate/dumbbell is larger than 5%. Do not
+            # show a "down" card that writes the same number; hold instead.
+            base["reason"] = (
+                f"最小减重档位 {_step(equipment):g}kg，先保持重量或减一组"
+            )
+        else:
+            base.update(
+                {
+                    "target_weight_kg": target,
+                    "action": "down",
+                    "reason": (
+                        f"上一组 RPE {avg_rpe}"
+                        if avg_rpe is not None
+                        else "次数低于目标"
+                    ),
+                }
+            )
     elif avg_rpe is not None and avg_rpe <= 8 and max(reps) >= top:
         target = _round_load(float(current) * UP_RATE, equipment)
-        base.update(
-            {
-                "target_weight_kg": target,
-                "action": "up",
-                "reason": f"上一组 RPE {avg_rpe}，次数到 {max(reps)}",
-            }
-        )
+        if target <= float(current):
+            # 2.5% of a light barbell can be below the smallest plate. Holding
+            # is more honest than an "up" card with an unchanged weight.
+            base["reason"] = (
+                f"最小加重档位 {_step(equipment):g}kg，先保持；先把次数做稳"
+            )
+        else:
+            base.update(
+                {
+                    "target_weight_kg": target,
+                    "action": "up",
+                    "reason": f"上一组 RPE {avg_rpe}，次数到 {max(reps)}",
+                }
+            )
     else:
         base["reason"] = (
             f"上一组 RPE {avg_rpe}" if avg_rpe is not None else "还没记录 RPE"

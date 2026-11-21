@@ -354,8 +354,10 @@ async def extract_and_store(
         return []
     # Punctuation-only or emoji-only turns carry no durable fact. Without this
     # guard the model sometimes echoes the example in the prompt ("每周二四六
-    # 训练") when the user sends only "？？？？？？？？".
-    if len(re.sub(r"[\s\W_]+", "", user_message)) < 4:
+    # 训练") when the user sends only "？？？？？？？？". Do not require a long
+    # message: "我腰疼" is short but still worth extracting when called
+    # directly.
+    if not re.sub(r"[\s\W_]+", "", user_message):
         return []
     try:
         # Memory extraction must not pin a DB transaction during its LLM call.

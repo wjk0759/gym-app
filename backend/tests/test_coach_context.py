@@ -30,6 +30,7 @@ from app.services.coach_context import (
     context_as_text,
     fit_context_to_budget,
 )
+from app.services.coach_control.context import with_plan_context
 
 
 @pytest.fixture()
@@ -443,6 +444,24 @@ def test_build_context_respects_budget_with_large_app_context(db, seeded):
     assert context["profile"]["nickname"] == "小林"
     assert context["current_plan"]["days"][0]["exercises"][0]["name_zh"]
     assert context["app_context"]["today_day"]["id"] == "day-1"
+
+
+def test_app_plan_gets_server_version_and_start_date(db, seeded):
+    today = datetime.now(timezone.utc).date()
+    context = with_plan_context(
+        db,
+        "user-1",
+        {
+            "plan": {
+                "id": "program-1",
+                "days": [],
+            }
+        },
+    )
+
+    assert context["plan"]["version"] == 2
+    assert context["plan"]["start_date"] == today.isoformat()
+    assert context["plan"]["weeks"] == 4
 
 
 def test_building_context_does_not_touch_memory_timestamps(db, seeded):

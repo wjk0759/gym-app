@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.db import Base
 from app.models import (
+    BodyMetric,
     EquipmentType,
     EquipmentTypeExercise,
     Exercise,
@@ -23,7 +24,11 @@ from app.models import (
     WorkoutSession,
 )
 from app.services.coach_control.capabilities import coach_answer
-from app.services.coach_control.insights import _window_for, build_readonly_context
+from app.services.coach_control.insights import (
+    _profile_summary,
+    _window_for,
+    build_readonly_context,
+)
 from app.services.coach_control.runtime import handle_turn
 
 
@@ -241,6 +246,40 @@ def test_complete_profile_is_reported_as_complete(db, seeded):
     assert "基础档案已完整，没有缺失项" in context
     assert "已填器械：哑铃" in context
     assert "每周训练 3 天" in context
+
+
+def test_profile_weight_from_body_metric_is_not_missing(db, seeded):
+    from app.models import Goal
+
+    db.add(Goal(user_id="user-1", type="build_muscle", status="active"))
+    profile = db.get(Profile, "user-1")
+    profile.weight_kg = None
+    db.add(
+        BodyMetric(
+            id="metric-1",
+            user_id="user-1",
+            client_id="metric-1",
+            measured_at=datetime.now(timezone.utc),
+            weight_kg=71,
+        )
+    )
+    db.commit()
+
+    summary = _profile_summary(db, profile)
+
+    assert "还缺" not in summary
+    assert "基础档案已完整" in summary
+
+
+def test_profile_injury_codes_are_localized(db, seeded):
+    profile = db.get(Profile, "user-1")
+    profile.injuries = ["knee_pain", "lower_back"]
+    db.commit()
+
+    summary = _profile_summary(db, profile)
+
+    assert "伤病记录：膝部、腰背" in summary
+    assert "knee_pain" not in summary
 
 
 def test_last_week_is_a_calendar_window():

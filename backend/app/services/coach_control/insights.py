@@ -21,6 +21,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ...models import (
+    BodyMetric,
     EquipmentType,
     EquipmentTypeExercise,
     Exercise,
@@ -328,14 +329,32 @@ def _profile_summary(db: Session, profile: Profile) -> str:
     if profile.height_cm is None:
         missing.append("身高")
     if profile.weight_kg is None:
-        missing.append("体重")
+        # Body check-ins are a valid source too. A user who only logs weight
+        # through a body metric should not be told the profile is missing it.
+        latest_weight = db.execute(
+            select(BodyMetric.weight_kg)
+            .where(
+                BodyMetric.user_id == profile.user_id,
+                BodyMetric.weight_kg.is_not(None),
+            )
+            .order_by(BodyMetric.measured_at.desc())
+            .limit(1)
+        ).scalar_one_or_none()
+        if latest_weight is None:
+            missing.append("体重")
     if not profile.onboarded_at:
         missing.append("完成建档")
     goal = active_goal(db, profile.user_id)
     if goal is None:
         missing.append("训练目标")
     injuries = [str(item) for item in (profile.injuries or []) if str(item).strip()]
-    injury_line = "伤病记录：" + ("、".join(injuries) if injuries else "无")
+    injury_line = "伤病记录：" + (
+        "、".join(
+            PROFILE_INJURY_LABELS.get(item, item) for item in injuries
+        )
+        if injuries
+        else "无"
+    )
     equipment = [str(item) for item in (profile.equipment or []) if str(item).strip()]
     equipment_line = "已填器械：" + (
         "、".join(EQUIPMENT_LABELS.get(item, item) for item in equipment)
@@ -420,6 +439,15 @@ CONTRAINDICATION_LABELS = {
     "shoulder_pain": "肩",
     "elbow_pain": "肘",
     "wrist_pain": "腕",
+}
+PROFILE_INJURY_LABELS = {
+    "knee_pain": "膝部",
+    "lower_back": "腰背",
+    "shoulder_pain": "肩部",
+    "elbow_pain": "肘部",
+    "wrist_pain": "手腕",
+    "ankle_pain": "脚踝",
+    "chest_pain": "胸部",
 }
 EQUIPMENT_CATEGORY_LABELS = {
     "machine": "固定器械",

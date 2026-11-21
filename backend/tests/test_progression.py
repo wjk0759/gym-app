@@ -47,15 +47,22 @@ def db():
         engine.dispose()
 
 
-def _program(db, *, weight: float = 80) -> Program:
+def _program(
+    db,
+    *,
+    weight: float = 80,
+    slug: str = "bench-press",
+    name: str = "杠铃卧推",
+    equipment: str = "barbell",
+) -> Program:
     today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
     monday = today - timedelta(days=today.weekday())
     db.add(
         Exercise(
-            slug="bench-press",
-            name_zh="杠铃卧推",
+            slug=slug,
+            name_zh=name,
             muscle_group="chest",
-            equipment="barbell",
+            equipment=equipment,
             is_compound=True,
             contraindications=[],
         )
@@ -82,7 +89,7 @@ def _program(db, *, weight: float = 80) -> Program:
     db.add(
         PlanExercise(
             program_day_id=day.id,
-            exercise_slug="bench-press",
+            exercise_slug=slug,
             order_index=1,
             sets=3,
             reps="8-12",
@@ -167,7 +174,14 @@ def _bodyweight_session(db, *, reps: int, rpe: float) -> None:
     db.commit()
 
 
-def _last_session(db, *, reps: int, rpe: float) -> None:
+def _last_session(
+    db,
+    *,
+    reps: int,
+    rpe: float,
+    slug: str = "bench-press",
+    weight: float = 80,
+) -> None:
     session = WorkoutSession(
         user_id="user-1",
         started_at=datetime.now(ZoneInfo("Asia/Shanghai")) - timedelta(days=2),
@@ -179,9 +193,9 @@ def _last_session(db, *, reps: int, rpe: float) -> None:
         db.add(
             SetLog(
                 session_id=session.id,
-                exercise_slug="bench-press",
+                exercise_slug=slug,
                 set_index=index,
-                weight_kg=80,
+                weight_kg=weight,
                 reps=reps,
                 rpe=rpe,
                 completed=True,
@@ -211,6 +225,42 @@ def test_progression_lowers_weight_after_rpe_nine(db):
     target = plan["targets"][0]
     assert target["action"] == "down"
     assert target["target_weight_kg"] == 75.0
+
+
+def test_progression_holds_when_up_rounds_to_same_barbell_weight(db):
+    program = _program(db, weight=30)
+    _last_session(db, reps=12, rpe=8, weight=30)
+
+    plan = build_plan(db, "user-1", program)
+
+    target = plan["targets"][0]
+    assert target["action"] == "hold"
+    assert target["target_weight_kg"] == 30
+    assert "最小加重档位" in target["reason"]
+
+
+def test_progression_holds_when_down_rounds_to_same_dumbbell_weight(db):
+    program = _program(
+        db,
+        weight=8,
+        slug="dumbbell-curl",
+        name="哑铃弯举",
+        equipment="dumbbell",
+    )
+    _last_session(
+        db,
+        reps=10,
+        rpe=9,
+        slug="dumbbell-curl",
+        weight=8,
+    )
+
+    plan = build_plan(db, "user-1", program)
+
+    target = plan["targets"][0]
+    assert target["action"] == "hold"
+    assert target["target_weight_kg"] == 8
+    assert "最小减重档位" in target["reason"]
 
 
 def test_progression_facts_are_injected_for_coach_answer(db):
