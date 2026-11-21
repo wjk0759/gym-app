@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`c7f432f`（AI 教练阶段 3 代码收口 + 硬化：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时/开关/分页、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练、多习惯提醒、并发保护和主动教练开关但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V45**；后端 **744 passed**、QA **76/76**、Ruff 通过；**Mac 复测 58c8335：N34/N35/N36/动作器械解释通过，N41 已修；N38/N39/N40 P2 仍在；iOS 151/151 + SE 7/7；不部署**；**Windows c7f432f：N39 已修，生产写链路验收通过；N38/N40 仍待修**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`f5a53c01`（AI 教练阶段 3 代码收口 + 硬化：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时/开关/分页、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练、多习惯提醒、并发保护和主动教练开关但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V45**；后端 **746 passed**、QA **76/76**、Ruff 通过；**Mac 复测 58c8335：N34/N35/N36/动作器械解释通过，N41 已修；N38/N39/N40 P2 仍在；iOS 151/151 + SE 7/7；不部署**；**Windows c7f432f/f5a53c01：N38/N39/N40 已修，生产写链路验收通过**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -36,14 +36,14 @@
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
 
-### 2026-11-21 · Windows（阶段 3 生产写链路验收 + 跨周计划修复）
+### 2026-11-21 · Windows（阶段 3 生产写链路验收 + 跨周计划/N38/N40 修复）
 
-- 提交：`c7f432f`，已推 `develop`；生产 API 已重建，`/health/ready` 200。
+- 提交：`c7f432f`、`f5a53c01`，已推 `develop`；生产 API 已重建，`/health/ready` 200。
 - 完整 `/coach/turns` 生产冒烟（`test_reviewer`，真实 LLM）：
   - 只读问答 9 条全部 `coach.answer`（除周安排）：上周训练 0 次、最近饮食 0 条、readiness no_data、计划解释、档案缺失、伤病“无记录”、深蹲要点；延迟 **0.95–2.7s**。
   - “下周哑铃交替弯举加多少重量”两次分别 **9.5s / 14.9s**，命中 `coach_intent_router` 后才回答；内容正确（无记录先保持），但延迟偏高，后续可只看是否要跳过语义路由。
   - `第一周/第二周/下周每天练什么` 都返回 `training.week_schedule`，第二周正确列出 11/24 推、11/26 拉、11/28 腿。
-  - 写链路：`body.log_weight` 确认 200 → 撤销 200（`deleted=true`）；`memory.remember` 确认 200 → `/coach/memories` 可见 → 撤销 200（记忆置 inactive）；`ui.configure_reminders` 确认 200（喝水 10:00）。
+  - 写链路：`body.log_weight` 确认 200 → 撤销 200（`deleted=true`）；`memory.remember` 确认 200 → `/coach/memories` 可见 → 撤销 200（记忆置 inactive）；`ui.configure_reminders` 确认 200（喝水 10:00）；多习惯“10点喝水、晚上10点睡觉”确认后 receipt 为“喝水 10:00、睡眠 22:00 提醒已设置”。
   - 生活事件：“下周一至周三出差” 正确识别 11/24 推日，生成 `11/24 → 11/27` 顺延卡；确认 200，撤销 200，计划恢复。
   - 全部冒烟后 `/coach/sessions/reset` 关闭会话；未在真实用户 `13428104171` 上写数据。
 - 本轮修复：
@@ -51,16 +51,18 @@
   - **第 X 周路由**：`_looks_like_week_schedule` 支持“第一周/第二周/第八周”，不再只认“一周”。
   - **记忆时间戳污染**：`build_coach_context` 每轮把所有记忆的 `last_used_at` 写回，ORM 的 `updated_at onupdate` 跟着刷新，导致旧记忆看起来刚更新、列表重排。现在构建上下文只读，不再写记忆。
   - **标点-only 记忆**：自动抽取前要求至少 4 个有效字符，`？？？？？？？？` 不再触发记忆模型。
+  - **N38 字面 `?`**：`_week_reply` 的每日行从 `? {line}` 改为 `• {line}`，空摘要 fallback 改成“本周暂时没有训练安排。”；生产复测第二周回复已用 `•`。
+  - **N40 多习惯不同时间**：解析消息里的每个时间表达式，并按分句把时间分配给对应习惯；“每天10点喝水，晚上10点睡觉”现在 payload 为 hydration 10:00 + sleep 22:00，确认 receipt 也分别列出两项时间。
 - 验证：
-  - 后端 **744 passed**、QA **76/76**、Ruff 通过。
-  - 生产复测：标点-only 连续两轮，`/coach/memories` 的 `updated_at` 不再变化。
+  - 后端 **746 passed**、QA **76/76**、Ruff 通过。
+  - 生产复测：标点-only 连续两轮，`/coach/memories` 的 `updated_at` 不再变化；第二周回复 `•`；N40 receipt 正确。
   - 测试账号清理：撤销 `body.log_weight` 会 `recompute_profile_cache` 把 profile 体重清空；已恢复 `test_reviewer` 的 `weight_kg=70.1`、`body_fat_pct=18.0`。旧记忆 `preferred_bench_press` 仍在，属于测试账号历史数据，不是新写入。
 - 仍未验证：
   - 真实高负荷账号的 readiness / 进阶确认链路（只有单元测试）。
   - 正式 LLM 答案质量 eval 基线（本轮是生产冒烟，不是可重复评分集）。
   - iOS 构建/真机（Windows 未编译）。
 - 需要 Mac：
-  - `git pull` → `xcodegen generate` → build/test；重点复测设置页主动教练开关、内嵌教练、习惯提醒、N32/N34/N35/N36。
+  - `git pull` → `xcodegen generate` → build/test；重点复测设置页主动教练开关、内嵌教练、习惯提醒、N32/N34/N35/N36，以及 N38/N39/N40（第二周/多习惯时间/周安排 bullet）。
   - 在 App 里连问两轮无关问题，确认 `/coach/memories` 顺序/时间不再跳动。
 - 仍 BLOCKED：APNs、iOS 构建/真机验收、ICP/App 备案、生成式 AI 登记、App Store Connect/IAP/TestFlight。
 
